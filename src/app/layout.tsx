@@ -5,6 +5,7 @@ import "./globals.css";
 
 const navLinks = [
   { href: "/", label: "受注" },
+  { href: "/orders/new", label: "新規受注" },
   { href: "/companies", label: "顧客" },
   { href: "/work-orders", label: "製造指示書" },
   { href: "/deliveries", label: "納品書" },
