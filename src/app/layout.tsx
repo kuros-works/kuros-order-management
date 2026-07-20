@@ -1,6 +1,16 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
+import Link from "next/link";
 import "./globals.css";
+
+const navLinks = [
+  { href: "/", label: "受注" },
+  { href: "/companies", label: "顧客" },
+  { href: "/work-orders", label: "製造指示書" },
+  { href: "/deliveries", label: "納品書" },
+  { href: "/invoices", label: "請求書" },
+  { href: "/receipts", label: "領収書" },
+];
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -27,7 +37,20 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="min-h-full flex flex-col">
+        <nav className="border-b border-zinc-300 bg-zinc-100 px-8 py-3">
+          <ul className="flex flex-row gap-6 text-sm font-bold">
+            {navLinks.map((link) => (
+              <li key={link.href}>
+                <Link href={link.href} className="hover:underline">
+                  {link.label}
+                </Link>
+              </li>
+            ))}
+          </ul>
+        </nav>
+        {children}
+      </body>
     </html>
   );
 }
