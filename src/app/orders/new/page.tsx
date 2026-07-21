@@ -29,6 +29,12 @@ async function createOrder(formData: FormData) {
     throw new Error("単価を入力してください");
   }
 
+  const desiredDeliveryDate =
+    String(formData.get("desired_delivery_date") ?? "").trim() || null;
+  const drawingNumber =
+    String(formData.get("drawing_number") ?? "").trim() || null;
+  const notes = String(formData.get("notes") ?? "").trim() || null;
+
   const { error } = await supabase.from("orders").insert({
     company_id: companyId,
     subject,
@@ -37,6 +43,9 @@ async function createOrder(formData: FormData) {
     unit,
     order_date: new Date().toISOString().slice(0, 10),
     status: "受注",
+    desired_delivery_date: desiredDeliveryDate,
+    drawing_number: drawingNumber,
+    notes,
   });
 
   if (error) {
@@ -131,6 +140,45 @@ export default async function NewOrderPage() {
             name="unit_price"
             type="number"
             required
+            className="w-full rounded border border-zinc-300 px-3 py-2 text-sm"
+          />
+        </div>
+        <div>
+          <label
+            htmlFor="desired_delivery_date"
+            className="mb-1 block text-sm font-bold"
+          >
+            希望納期
+          </label>
+          <input
+            id="desired_delivery_date"
+            name="desired_delivery_date"
+            type="date"
+            className="w-full rounded border border-zinc-300 px-3 py-2 text-sm"
+          />
+        </div>
+        <div>
+          <label
+            htmlFor="drawing_number"
+            className="mb-1 block text-sm font-bold"
+          >
+            図番
+          </label>
+          <input
+            id="drawing_number"
+            name="drawing_number"
+            type="text"
+            className="w-full rounded border border-zinc-300 px-3 py-2 text-sm"
+          />
+        </div>
+        <div>
+          <label htmlFor="notes" className="mb-1 block text-sm font-bold">
+            備考
+          </label>
+          <textarea
+            id="notes"
+            name="notes"
+            rows={3}
             className="w-full rounded border border-zinc-300 px-3 py-2 text-sm"
           />
         </div>
