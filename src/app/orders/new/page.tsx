@@ -4,6 +4,11 @@ import { supabase } from "@/lib/supabase";
 async function createOrder(formData: FormData) {
   "use server";
 
+  const companyId = Number(formData.get("company_id"));
+  if (!Number.isFinite(companyId)) {
+    throw new Error("顧客を選択してください");
+  }
+
   const subject = String(formData.get("subject") ?? "").trim();
   if (!subject) {
     throw new Error("件名を入力してください");
@@ -25,7 +30,7 @@ async function createOrder(formData: FormData) {
   }
 
   const { error } = await supabase.from("orders").insert({
-    company_id: 2,
+    company_id: companyId,
     subject,
     quantity,
     unit_price: unitPrice,
@@ -41,11 +46,46 @@ async function createOrder(formData: FormData) {
   redirect("/");
 }
 
-export default function NewOrderPage() {
+export default async function NewOrderPage() {
+  const { data: companies, error } = await supabase
+    .from("companies")
+    .select("id, company_name")
+    .order("id", { ascending: true });
+
+  if (error) {
+    return (
+      <div className="p-8">
+        <h1 className="text-xl font-bold text-red-600">
+          companiesの取得に失敗しました
+        </h1>
+        <pre className="mt-4 whitespace-pre-wrap text-sm text-red-500">
+          {error.message}
+        </pre>
+      </div>
+    );
+  }
+
   return (
     <div className="p-8">
       <h1 className="mb-4 text-xl font-bold">新規受注</h1>
       <form action={createOrder} className="max-w-md space-y-4">
+        <div>
+          <label htmlFor="company_id" className="mb-1 block text-sm font-bold">
+            顧客
+          </label>
+          <select
+            id="company_id"
+            name="company_id"
+            required
+            className="w-full rounded border border-zinc-300 px-3 py-2 text-sm"
+          >
+            {companies?.map((company) => (
+              <option key={company.id} value={company.id}>
+                {company.company_name}
+              </option>
+            ))}
+          </select>
+        </div>
         <div>
           <label htmlFor="subject" className="mb-1 block text-sm font-bold">
             件名
