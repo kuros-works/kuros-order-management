@@ -1,4 +1,5 @@
 import { redirect } from "next/navigation";
+import { revalidatePath } from "next/cache";
 import { supabase } from "@/lib/supabase";
 
 async function createOrder(formData: FormData) {
@@ -54,6 +55,7 @@ async function createOrder(formData: FormData) {
     throw new Error(`ordersへの保存に失敗しました: ${error.message}`);
   }
 
+  revalidatePath("/");
   redirect("/");
 }
 
