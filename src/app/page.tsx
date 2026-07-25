@@ -1,6 +1,7 @@
-import { supabase } from "@/lib/supabase";
+import { createClient } from "@/lib/supabase-server";
 
 export default async function Home() {
+  const supabase = await createClient();
   const { data: rawOrders, error } = await supabase
     .from("orders")
     .select("*, companies(company_name)");
