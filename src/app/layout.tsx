@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import Link from "next/link";
+import LogoutButton from "./logout-button";
 import "./globals.css";
 
 const navLinks = [
@@ -48,6 +49,9 @@ export default function RootLayout({
                 </Link>
               </li>
             ))}
+            <li>
+              <LogoutButton />
+            </li>
           </ul>
         </nav>
         {children}
