@@ -4,7 +4,9 @@ export default async function WorkOrders() {
   const supabase = await createClient();
   const { data: rawWorkOrders, error } = await supabase
     .from("work_orders")
-    .select("*, orders(order_code, subject)");
+    .select(
+      "*, orders(order_code, subject, drawing_number, quantity, desired_delivery_date, notes, companies(company_name))",
+    );
 
   if (error) {
     return (
@@ -22,12 +24,25 @@ export default async function WorkOrders() {
   const workOrders = rawWorkOrders?.map((workOrder) => {
     const { order_id, orders, ...rest } = workOrder as typeof workOrder & {
       order_id: unknown;
-      orders: { order_code: string; subject: string } | null;
+      orders: {
+        order_code: string;
+        subject: string;
+        drawing_number: string;
+        quantity: number;
+        desired_delivery_date: string;
+        notes: string;
+        companies: { company_name: string } | null;
+      } | null;
     };
     return {
       ...rest,
       order_code: orders?.order_code ?? order_id,
       subject: orders?.subject ?? null,
+      drawing_number: orders?.drawing_number ?? null,
+      company_name: orders?.companies?.company_name ?? null,
+      quantity: orders?.quantity ?? null,
+      desired_delivery_date: orders?.desired_delivery_date ?? null,
+      notes: orders?.notes ?? null,
     };
   });
 
