@@ -2,15 +2,15 @@ import { createClient } from "@/lib/supabase-server";
 
 export default async function Deliveries() {
   const supabase = await createClient();
-  const { data: deliveryNotes, error } = await supabase
-    .from("delivery_notes")
-    .select("*");
+  const { data: rawDeliveryNoteItems, error } = await supabase
+    .from("delivery_note_items")
+    .select("*, orders(order_code, subject, companies(company_name))");
 
   if (error) {
     return (
       <div className="p-8">
         <h1 className="text-xl font-bold text-red-600">
-          delivery_notesの取得に失敗しました
+          delivery_note_itemsの取得に失敗しました
         </h1>
         <pre className="mt-4 whitespace-pre-wrap text-sm text-red-500">
           {error.message}
@@ -19,17 +19,34 @@ export default async function Deliveries() {
     );
   }
 
+  const deliveryNoteItems = rawDeliveryNoteItems?.map((item) => {
+    const { order_id, orders, ...rest } = item as typeof item & {
+      order_id: unknown;
+      orders: {
+        order_code: string;
+        subject: string;
+        companies: { company_name: string } | null;
+      } | null;
+    };
+    return {
+      ...rest,
+      order_code: orders?.order_code ?? order_id,
+      subject: orders?.subject ?? null,
+      company_name: orders?.companies?.company_name ?? null,
+    };
+  });
+
   const columns =
-    deliveryNotes && deliveryNotes.length > 0
-      ? Object.keys(deliveryNotes[0]).filter((col) => col !== "created_at")
+    deliveryNoteItems && deliveryNoteItems.length > 0
+      ? Object.keys(deliveryNoteItems[0]).filter((col) => col !== "created_at")
       : [];
 
   return (
     <div className="p-8">
       <h1 className="mb-4 text-xl font-bold">
-        delivery_notes 一覧（{deliveryNotes?.length ?? 0}件）
+        delivery_note_items 一覧（{deliveryNoteItems?.length ?? 0}件）
       </h1>
-      {!deliveryNotes || deliveryNotes.length === 0 ? (
+      {!deliveryNoteItems || deliveryNoteItems.length === 0 ? (
         <p>データがありません</p>
       ) : (
         <div className="overflow-x-auto">
@@ -47,11 +64,11 @@ export default async function Deliveries() {
               </tr>
             </thead>
             <tbody>
-              {deliveryNotes.map((note, i) => (
+              {deliveryNoteItems.map((item, i) => (
                 <tr key={i}>
                   {columns.map((col) => (
                     <td key={col} className="border border-zinc-300 px-3 py-2">
-                      {String(note[col] ?? "")}
+                      {String(item[col] ?? "")}
                     </td>
                   ))}
                 </tr>
