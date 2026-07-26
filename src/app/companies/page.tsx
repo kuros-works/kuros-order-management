@@ -20,7 +20,9 @@ export default async function Companies() {
   }
 
   const columns =
-    companies && companies.length > 0 ? Object.keys(companies[0]) : [];
+    companies && companies.length > 0
+      ? Object.keys(companies[0]).filter((col) => col !== "created_at")
+      : [];
 
   return (
     <div className="p-8">

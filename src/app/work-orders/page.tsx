@@ -32,7 +32,9 @@ export default async function WorkOrders() {
   });
 
   const columns =
-    workOrders && workOrders.length > 0 ? Object.keys(workOrders[0]) : [];
+    workOrders && workOrders.length > 0
+      ? Object.keys(workOrders[0]).filter((col) => col !== "created_at")
+      : [];
 
   return (
     <div className="p-8">

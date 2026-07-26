@@ -31,7 +31,9 @@ export default async function Receipts() {
   });
 
   const columns =
-    receipts && receipts.length > 0 ? Object.keys(receipts[0]) : [];
+    receipts && receipts.length > 0
+      ? Object.keys(receipts[0]).filter((col) => col !== "created_at")
+      : [];
 
   return (
     <div className="p-8">

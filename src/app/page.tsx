@@ -30,7 +30,10 @@ export default async function Home() {
     };
   });
 
-  const columns = orders && orders.length > 0 ? Object.keys(orders[0]) : [];
+  const columns =
+    orders && orders.length > 0
+      ? Object.keys(orders[0]).filter((col) => col !== "created_at")
+      : [];
 
   return (
     <div className="p-8">

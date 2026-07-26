@@ -21,7 +21,7 @@ export default async function Deliveries() {
 
   const columns =
     deliveryNotes && deliveryNotes.length > 0
-      ? Object.keys(deliveryNotes[0])
+      ? Object.keys(deliveryNotes[0]).filter((col) => col !== "created_at")
       : [];
 
   return (
