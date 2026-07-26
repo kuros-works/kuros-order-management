@@ -1,9 +1,11 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
-import { supabase } from "@/lib/supabase";
+import { createClient } from "@/lib/supabase-server";
 
 async function createOrder(formData: FormData) {
   "use server";
+
+  const supabase = await createClient();
 
   const companyId = Number(formData.get("company_id"));
   if (!Number.isFinite(companyId)) {
@@ -60,6 +62,7 @@ async function createOrder(formData: FormData) {
 }
 
 export default async function NewOrderPage() {
+  const supabase = await createClient();
   const { data: companies, error } = await supabase
     .from("companies")
     .select("id, company_name")
