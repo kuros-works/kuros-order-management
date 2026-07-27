@@ -24,6 +24,11 @@ export async function createDelivery(
     return { error: "納品数量を正しく入力してください" };
   }
 
+  const deliveryDate = String(formData.get("delivery_date") ?? "").trim();
+  if (!deliveryDate) {
+    return { error: "納品日を入力してください" };
+  }
+
   const { data: lastDeliveryNote, error: lastDeliveryNoteError } =
     await supabase
       .from("delivery_notes")
@@ -48,9 +53,7 @@ export async function createDelivery(
     .from("delivery_notes")
     .insert({
       delivery_note_code: deliveryNoteCode,
-      created_date: new Date().toLocaleDateString("sv-SE", {
-        timeZone: "Asia/Tokyo",
-      }),
+      created_date: deliveryDate,
     })
     .select("id")
     .single();

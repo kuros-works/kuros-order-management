@@ -3,9 +3,9 @@ import { DeliveryForm } from "./delivery-form";
 
 export default async function NewDeliveryPage() {
   const supabase = await createClient();
-  const { data: orders, error } = await supabase
+  const { data: rawOrders, error } = await supabase
     .from("orders")
-    .select("id, order_code, subject")
+    .select("id, order_code, subject, unit_price, companies(company_name)")
     .order("id", { ascending: true });
 
   if (error) {
@@ -20,6 +20,16 @@ export default async function NewDeliveryPage() {
       </div>
     );
   }
+
+  const orders = rawOrders?.map((order) => {
+    const { companies, ...rest } = order as typeof order & {
+      companies: { company_name: string } | null;
+    };
+    return {
+      ...rest,
+      company_name: companies?.company_name ?? null,
+    };
+  });
 
   return (
     <div className="p-8">
