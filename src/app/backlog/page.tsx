@@ -22,7 +22,9 @@ export default async function Backlog() {
   }
 
   const { data: deliveryNoteItems, error: deliveryNoteItemsError } =
-    await supabase.from("delivery_note_items").select("order_id, delivered_quantity");
+    await supabase
+      .from("delivery_note_items")
+      .select("order_id, delivered_quantity, delivery_notes(created_date)");
 
   if (deliveryNoteItemsError) {
     return (
@@ -38,9 +40,22 @@ export default async function Backlog() {
   }
 
   const deliveredByOrderId = new Map<number, number>();
+  const latestDeliveryDateByOrderId = new Map<number, string>();
   for (const item of deliveryNoteItems ?? []) {
+    const { delivery_notes } = item as typeof item & {
+      delivery_notes: { created_date: string } | null;
+    };
+
     const current = deliveredByOrderId.get(item.order_id) ?? 0;
     deliveredByOrderId.set(item.order_id, current + item.delivered_quantity);
+
+    const createdDate = delivery_notes?.created_date;
+    if (createdDate) {
+      const latest = latestDeliveryDateByOrderId.get(item.order_id);
+      if (!latest || createdDate > latest) {
+        latestDeliveryDateByOrderId.set(item.order_id, createdDate);
+      }
+    }
   }
 
   const backlog = (rawOrders ?? []).map((order) => {
@@ -53,6 +68,7 @@ export default async function Backlog() {
       company_name: companies?.company_name ?? null,
       delivered_quantity: deliveredQuantity,
       remaining_quantity: order.quantity - deliveredQuantity,
+      latest_delivery_date: latestDeliveryDateByOrderId.get(order.id) ?? null,
     };
   });
 
@@ -89,6 +105,9 @@ export default async function Backlog() {
                 <th className="border border-zinc-300 bg-zinc-100 px-3 py-2 text-left">
                   残り
                 </th>
+                <th className="border border-zinc-300 bg-zinc-100 px-3 py-2 text-left">
+                  納品日
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -114,6 +133,9 @@ export default async function Backlog() {
                   </td>
                   <td className="border border-zinc-300 px-3 py-2">
                     {order.remaining_quantity}
+                  </td>
+                  <td className="border border-zinc-300 px-3 py-2">
+                    {order.latest_delivery_date ?? "-"}
                   </td>
                 </tr>
               ))}
