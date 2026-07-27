@@ -9,6 +9,7 @@ const navLinks = [
   { href: "/orders/new", label: "新規受注" },
   { href: "/companies", label: "顧客" },
   { href: "/work-orders", label: "製造指示書" },
+  { href: "/work-orders/new", label: "新規製造指示書" },
   { href: "/deliveries", label: "納品書" },
   { href: "/invoices", label: "請求書" },
   { href: "/receipts", label: "領収書" },
