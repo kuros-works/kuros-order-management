@@ -4,7 +4,9 @@ export default async function Invoices() {
   const supabase = await createClient();
   const { data: rawInvoices, error } = await supabase
     .from("invoices")
-    .select("*, orders(order_code, subject), companies(company_name)");
+    .select(
+      "*, orders(order_code, subject, unit_price, quantity), companies(company_name)",
+    );
 
   if (error) {
     return (
@@ -24,14 +26,27 @@ export default async function Invoices() {
       invoice as typeof invoice & {
         order_id: unknown;
         company_id: unknown;
-        orders: { order_code: string; subject: string } | null;
+        orders: {
+          order_code: string;
+          subject: string;
+          unit_price: number | null;
+          quantity: number | null;
+        } | null;
         companies: { company_name: string } | null;
       };
+    const unit_price = orders?.unit_price ?? null;
+    const quantity = orders?.quantity ?? null;
     return {
       ...rest,
       order_code: orders?.order_code ?? order_id,
       subject: orders?.subject ?? null,
       company_name: companies?.company_name ?? company_id,
+      unit_price,
+      quantity,
+      amount:
+        unit_price !== null && quantity !== null
+          ? unit_price * quantity
+          : null,
     };
   });
 
