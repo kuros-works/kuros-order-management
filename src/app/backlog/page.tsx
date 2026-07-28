@@ -1,83 +1,24 @@
 import { createClient } from "@/lib/supabase-server";
+import { getOrdersWithRemainingQuantity } from "@/lib/backlog";
 
 export default async function Backlog() {
   const supabase = await createClient();
+  const { data: backlog, error } = await getOrdersWithRemainingQuantity(supabase);
 
-  const { data: rawOrders, error: ordersError } = await supabase
-    .from("orders")
-    .select("id, order_code, subject, unit_price, quantity, companies(company_name)")
-    .order("id", { ascending: true });
-
-  if (ordersError) {
+  if (error) {
     return (
       <div className="p-8">
-        <h1 className="text-xl font-bold text-red-600">
-          ordersの取得に失敗しました
-        </h1>
-        <pre className="mt-4 whitespace-pre-wrap text-sm text-red-500">
-          {ordersError.message}
-        </pre>
+        <h1 className="text-xl font-bold text-red-600">{error}</h1>
       </div>
     );
   }
-
-  const { data: deliveryNoteItems, error: deliveryNoteItemsError } =
-    await supabase
-      .from("delivery_note_items")
-      .select("order_id, delivered_quantity, delivery_notes(created_date)");
-
-  if (deliveryNoteItemsError) {
-    return (
-      <div className="p-8">
-        <h1 className="text-xl font-bold text-red-600">
-          delivery_note_itemsの取得に失敗しました
-        </h1>
-        <pre className="mt-4 whitespace-pre-wrap text-sm text-red-500">
-          {deliveryNoteItemsError.message}
-        </pre>
-      </div>
-    );
-  }
-
-  const deliveredByOrderId = new Map<number, number>();
-  const latestDeliveryDateByOrderId = new Map<number, string>();
-  for (const item of deliveryNoteItems ?? []) {
-    const { delivery_notes } = item as typeof item & {
-      delivery_notes: { created_date: string } | null;
-    };
-
-    const current = deliveredByOrderId.get(item.order_id) ?? 0;
-    deliveredByOrderId.set(item.order_id, current + item.delivered_quantity);
-
-    const createdDate = delivery_notes?.created_date;
-    if (createdDate) {
-      const latest = latestDeliveryDateByOrderId.get(item.order_id);
-      if (!latest || createdDate > latest) {
-        latestDeliveryDateByOrderId.set(item.order_id, createdDate);
-      }
-    }
-  }
-
-  const backlog = (rawOrders ?? []).map((order) => {
-    const { companies, ...rest } = order as typeof order & {
-      companies: { company_name: string } | null;
-    };
-    const deliveredQuantity = deliveredByOrderId.get(order.id) ?? 0;
-    return {
-      ...rest,
-      company_name: companies?.company_name ?? null,
-      delivered_quantity: deliveredQuantity,
-      remaining_quantity: order.quantity - deliveredQuantity,
-      latest_delivery_date: latestDeliveryDateByOrderId.get(order.id) ?? null,
-    };
-  });
 
   return (
     <div className="p-8">
       <h1 className="mb-4 text-xl font-bold">
-        受注残一覧（{backlog.length}件）
+        受注残一覧（{backlog?.length ?? 0}件）
       </h1>
-      {backlog.length === 0 ? (
+      {!backlog || backlog.length === 0 ? (
         <p>データがありません</p>
       ) : (
         <div className="overflow-x-auto">
