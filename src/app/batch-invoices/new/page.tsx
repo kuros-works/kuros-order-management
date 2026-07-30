@@ -23,7 +23,7 @@ export default async function NewBatchInvoicePage() {
 
   return (
     <div className="p-8">
-      <h1 className="mb-4 text-xl font-bold">まとめ請求書（新規作成）</h1>
+      <h1 className="mb-4 text-xl font-bold">一括請求書（新規作成）</h1>
       <BatchInvoiceForm companies={companies ?? []} />
     </div>
   );
