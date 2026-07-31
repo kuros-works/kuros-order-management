@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase-server";
+import { getOrdersWithRemainingQuantity } from "@/lib/backlog";
 
 export type CreateBatchInvoiceState = {
   error: string | null;
@@ -30,15 +31,65 @@ export async function createBatchInvoice(
     return { error: "発行日を入力してください" };
   }
 
-  const { error: insertError } = await supabase.from("batch_invoices").insert({
-    company_id: companyId,
-    billing_month: billingMonth,
-    issued_date: issuedDate,
-  });
+  const orderIds = formData
+    .getAll("order_ids")
+    .map((value) => Number(value))
+    .filter((value) => Number.isFinite(value));
 
-  if (insertError) {
+  if (orderIds.length === 0) {
+    return { error: "対象受注を1件以上選択してください" };
+  }
+
+  const { data: backlog, error: backlogError } =
+    await getOrdersWithRemainingQuantity(supabase);
+
+  if (backlogError) {
+    return { error: backlogError };
+  }
+
+  const orderIdSet = new Set(orderIds);
+  const eligibleOrderIds = (backlog ?? [])
+    .filter(
+      (order) =>
+        orderIdSet.has(order.id) &&
+        order.company_id === companyId &&
+        order.remaining_quantity === 0 &&
+        order.batch_invoice_id === null,
+    )
+    .map((order) => order.id);
+
+  if (eligibleOrderIds.length !== orderIds.length) {
     return {
-      error: `batch_invoicesへの保存に失敗しました: ${insertError.message}`,
+      error:
+        "選択された受注の中に、対象外（未完納・他の一括請求書に紐づけ済みなど）のものが含まれています",
+    };
+  }
+
+  const { data: batchInvoice, error: insertError } = await supabase
+    .from("batch_invoices")
+    .insert({
+      company_id: companyId,
+      billing_month: billingMonth,
+      issued_date: issuedDate,
+    })
+    .select("id")
+    .single();
+
+  if (insertError || !batchInvoice) {
+    return {
+      error: `batch_invoicesへの保存に失敗しました: ${insertError?.message}`,
+    };
+  }
+
+  const { error: updateError } = await supabase
+    .from("orders")
+    .update({ batch_invoice_id: batchInvoice.id })
+    .in("id", eligibleOrderIds);
+
+  if (updateError) {
+    await supabase.from("batch_invoices").delete().eq("id", batchInvoice.id);
+    return {
+      error: `ordersの更新に失敗しました: ${updateError.message}`,
     };
   }
 
