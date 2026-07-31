@@ -51,6 +51,17 @@ export function WorkOrderForm({ orders }: { orders: Order[] }) {
           className="w-full rounded border border-zinc-300 px-3 py-2 text-sm"
         />
       </div>
+      <div>
+        <label htmlFor="notes" className="mb-1 block text-sm font-bold">
+          備考
+        </label>
+        <textarea
+          id="notes"
+          name="notes"
+          rows={3}
+          className="w-full rounded border border-zinc-300 px-3 py-2 text-sm"
+        />
+      </div>
       <button
         type="submit"
         disabled={pending}

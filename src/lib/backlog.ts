@@ -7,6 +7,12 @@ export type OrderWithRemainingQuantity = {
   company_id: number;
   unit_price: number;
   quantity: number;
+  unit: string;
+  order_date: string;
+  status: string;
+  desired_delivery_date: string | null;
+  drawing_number: string | null;
+  notes: string | null;
   batch_invoice_id: number | null;
   company_name: string | null;
   delivered_quantity: number;
@@ -19,9 +25,7 @@ export async function getOrdersWithRemainingQuantity(
 ): Promise<{ data: OrderWithRemainingQuantity[] | null; error: string | null }> {
   const { data: rawOrders, error: ordersError } = await supabase
     .from("orders")
-    .select(
-      "id, order_code, subject, company_id, unit_price, quantity, batch_invoice_id, companies(company_name)",
-    )
+    .select("*, companies(company_name)")
     .order("id", { ascending: true });
 
   if (ordersError) {

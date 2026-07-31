@@ -24,6 +24,8 @@ export async function createWorkOrder(
     return { error: "担当者を入力してください" };
   }
 
+  const notes = String(formData.get("notes") ?? "").trim() || null;
+
   const { data: lastWorkOrder, error: lastWorkOrderError } = await supabase
     .from("work_orders")
     .select("work_order_code")
@@ -46,6 +48,7 @@ export async function createWorkOrder(
   const { error } = await supabase.from("work_orders").insert({
     order_id: orderId,
     assignee,
+    notes,
     work_order_code: workOrderCode,
     issued_date: new Date().toLocaleDateString("sv-SE", {
       timeZone: "Asia/Tokyo",
