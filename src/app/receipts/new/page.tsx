@@ -32,10 +32,33 @@ export default async function NewReceiptPage() {
     };
   });
 
+  const batchInvoiceIds = batchInvoices.map((batchInvoice) => batchInvoice.id);
+
+  const { data: orders, error: ordersError } =
+    batchInvoiceIds.length === 0
+      ? { data: [], error: null }
+      : await supabase
+          .from("orders")
+          .select("id, batch_invoice_id, quantity, unit_price")
+          .in("batch_invoice_id", batchInvoiceIds);
+
+  if (ordersError) {
+    return (
+      <div className="p-8">
+        <h1 className="text-xl font-bold text-red-600">
+          ordersの取得に失敗しました
+        </h1>
+        <pre className="mt-4 whitespace-pre-wrap text-sm text-red-500">
+          {ordersError.message}
+        </pre>
+      </div>
+    );
+  }
+
   return (
     <div className="p-8">
       <h1 className="mb-4 text-xl font-bold">入金記録（新規作成）</h1>
-      <ReceiptForm batchInvoices={batchInvoices} />
+      <ReceiptForm batchInvoices={batchInvoices} orders={orders ?? []} />
     </div>
   );
 }

@@ -1,12 +1,19 @@
 "use client";
 
-import { useActionState } from "react";
+import { useActionState, useState } from "react";
 import { createReceipt, type CreateReceiptState } from "./actions";
 
 type BatchInvoice = {
   id: number;
   batch_invoice_code: string;
   company_name: string | null;
+};
+
+type Order = {
+  id: number;
+  batch_invoice_id: number | null;
+  quantity: number;
+  unit_price: number;
 };
 
 const initialState: CreateReceiptState = { error: null };
@@ -17,12 +24,26 @@ function todayJST() {
 
 export function ReceiptForm({
   batchInvoices,
+  orders,
 }: {
   batchInvoices: BatchInvoice[];
+  orders: Order[];
 }) {
   const [state, formAction, pending] = useActionState(
     createReceipt,
     initialState,
+  );
+
+  const calcTotalAmount = (batchInvoiceId: string) =>
+    orders
+      .filter((order) => String(order.batch_invoice_id) === batchInvoiceId)
+      .reduce((sum, order) => sum + order.unit_price * order.quantity, 0);
+
+  const [selectedBatchInvoiceId, setSelectedBatchInvoiceId] = useState(
+    batchInvoices[0] ? String(batchInvoices[0].id) : "",
+  );
+  const [receivedAmount, setReceivedAmount] = useState(() =>
+    String(calcTotalAmount(selectedBatchInvoiceId)),
   );
 
   if (batchInvoices.length === 0) {
@@ -49,6 +70,11 @@ export function ReceiptForm({
           id="batch_invoice_id"
           name="batch_invoice_id"
           required
+          value={selectedBatchInvoiceId}
+          onChange={(e) => {
+            setSelectedBatchInvoiceId(e.target.value);
+            setReceivedAmount(String(calcTotalAmount(e.target.value)));
+          }}
           className="w-full rounded border border-zinc-300 px-3 py-2 text-sm"
         >
           {batchInvoices.map((batchInvoice) => (
@@ -88,6 +114,8 @@ export function ReceiptForm({
           min="1"
           step="1"
           required
+          value={receivedAmount}
+          onChange={(e) => setReceivedAmount(e.target.value)}
           className="w-full rounded border border-zinc-300 px-3 py-2 text-sm"
         />
       </div>
