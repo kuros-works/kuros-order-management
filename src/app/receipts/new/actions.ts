@@ -78,6 +78,21 @@ export async function createReceipt(
     };
   }
 
+  const today = new Date();
+  const completionDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+
+  const { error: ordersUpdateError } = await supabase
+    .from("orders")
+    .update({ completion_date: completionDate })
+    .eq("batch_invoice_id", batchInvoiceId);
+
+  if (ordersUpdateError) {
+    await supabase.from("receipts").delete().eq("id", receipt.id);
+    return {
+      error: `ordersのcompletion_date更新に失敗しました: ${ordersUpdateError.message}`,
+    };
+  }
+
   revalidatePath("/receipts");
   revalidatePath("/batch-invoices");
   redirect("/receipts");
