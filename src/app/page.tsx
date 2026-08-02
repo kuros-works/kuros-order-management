@@ -141,7 +141,8 @@ export default async function Home() {
   const columns =
     orders.length > 0
       ? Object.keys(orders[0]).filter(
-          (col) => col !== "created_at" && !statusKeys.includes(col),
+          (col) =>
+            col !== "created_at" && col !== "status" && !statusKeys.includes(col),
         )
       : [];
 
