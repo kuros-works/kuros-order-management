@@ -1,7 +1,8 @@
 import { createClient } from "@/lib/supabase-server";
-import { getOrdersWithRemainingQuantity } from "@/lib/backlog";
+import { getAggregatedStatus, getOrdersWithRemainingQuantity } from "@/lib/backlog";
 
 const STATUS_COLUMNS = [
+  { key: "aggregated_status", label: "進捗状況" },
   { key: "manufacturing_status", label: "製造指示状況" },
   { key: "delivery_status", label: "納品状況" },
   { key: "invoice_status", label: "請求状況" },
@@ -119,8 +120,16 @@ export default async function Home() {
           ? "入金済み"
           : "未入金";
 
+    const aggregatedStatus = getAggregatedStatus({
+      manufacturingStatus,
+      deliveryStatus,
+      invoiceStatus,
+      paymentStatusLabel,
+    });
+
     return {
       ...order,
+      aggregated_status: aggregatedStatus,
       manufacturing_status: manufacturingStatus,
       delivery_status: deliveryStatus,
       invoice_status: invoiceStatus,

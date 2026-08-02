@@ -82,3 +82,27 @@ export async function getOrdersWithRemainingQuantity(
 
   return { data: orders, error: null };
 }
+
+export function getAggregatedStatus(statuses: {
+  manufacturingStatus: string;
+  deliveryStatus: string;
+  invoiceStatus: string;
+  paymentStatusLabel: string;
+}): string {
+  const { manufacturingStatus, deliveryStatus, invoiceStatus, paymentStatusLabel } =
+    statuses;
+
+  if (paymentStatusLabel === "入金済み") {
+    return "入金済み";
+  }
+  if (invoiceStatus === "一括請求済み" || invoiceStatus === "個別請求済み") {
+    return "請求済み";
+  }
+  if (deliveryStatus === "完納") {
+    return "納品済み";
+  }
+  if (manufacturingStatus === "製造指示済み") {
+    return "製造指示済み";
+  }
+  return "受注";
+}
