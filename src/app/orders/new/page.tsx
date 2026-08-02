@@ -47,7 +47,6 @@ async function createOrder(formData: FormData) {
     order_date: new Date().toLocaleDateString("sv-SE", {
       timeZone: "Asia/Tokyo",
     }),
-    status: "受注",
     desired_delivery_date: desiredDeliveryDate,
     drawing_number: drawingNumber,
     notes,
