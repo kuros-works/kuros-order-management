@@ -7,6 +7,7 @@ const STATUS_COLUMNS = [
   { key: "delivery_status", label: "納品状況" },
   { key: "invoice_status", label: "請求状況" },
   { key: "payment_status_label", label: "入金状況" },
+  { key: "sent_status_label", label: "一括請求書送信状況" },
 ] as const;
 
 export default async function Home() {
@@ -46,7 +47,7 @@ export default async function Home() {
 
   const { data: batchInvoices, error: batchInvoicesError } = await supabase
     .from("batch_invoices")
-    .select("id, payment_status");
+    .select("id, payment_status, sent_flag");
 
   if (batchInvoicesError) {
     return (
@@ -90,6 +91,12 @@ export default async function Home() {
       batchInvoice.payment_status,
     ]),
   );
+  const sentFlagByBatchInvoiceId = new Map(
+    (batchInvoices ?? []).map((batchInvoice) => [
+      batchInvoice.id,
+      batchInvoice.sent_flag,
+    ]),
+  );
 
   const orders = (rawOrders ?? []).map((order) => {
     const manufacturingStatus = workOrderedOrderIds.has(order.id)
@@ -120,6 +127,13 @@ export default async function Home() {
           ? "入金済み"
           : "未入金";
 
+    const sentStatusLabel =
+      order.batch_invoice_id === null
+        ? "-"
+        : sentFlagByBatchInvoiceId.get(order.batch_invoice_id)
+          ? "一括請求書送信済み"
+          : "一括請求書未送信";
+
     const aggregatedStatus = getAggregatedStatus({
       manufacturingStatus,
       deliveryStatus,
@@ -134,6 +148,7 @@ export default async function Home() {
       delivery_status: deliveryStatus,
       invoice_status: invoiceStatus,
       payment_status_label: paymentStatusLabel,
+      sent_status_label: sentStatusLabel,
     };
   });
 
