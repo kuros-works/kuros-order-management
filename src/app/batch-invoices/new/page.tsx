@@ -1,5 +1,8 @@
 import { createClient } from "@/lib/supabase-server";
-import { getOrdersWithRemainingQuantity } from "@/lib/backlog";
+import {
+  getInvoicedOrderIds,
+  getOrdersWithRemainingQuantity,
+} from "@/lib/backlog";
 import { BatchInvoiceForm } from "./batch-invoice-form";
 
 export default async function NewBatchInvoicePage() {
@@ -33,10 +36,25 @@ export default async function NewBatchInvoicePage() {
     );
   }
 
+  const { data: invoicedOrderIds, error: invoicedOrderIdsError } =
+    await getInvoicedOrderIds(supabase);
+
+  if (invoicedOrderIdsError) {
+    return (
+      <div className="p-8">
+        <h1 className="text-xl font-bold text-red-600">
+          {invoicedOrderIdsError}
+        </h1>
+      </div>
+    );
+  }
+
   const eligibleOrders = (backlog ?? [])
     .filter(
       (order) =>
-        order.remaining_quantity === 0 && order.batch_invoice_id === null,
+        order.remaining_quantity === 0 &&
+        order.batch_invoice_id === null &&
+        !invoicedOrderIds?.has(order.id),
     )
     .map((order) => ({
       id: order.id,

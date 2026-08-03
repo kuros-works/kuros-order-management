@@ -83,6 +83,26 @@ export async function getOrdersWithRemainingQuantity(
   return { data: orders, error: null };
 }
 
+export async function getInvoicedOrderIds(
+  supabase: SupabaseClient,
+): Promise<{ data: Set<number> | null; error: string | null }> {
+  const { data: invoices, error: invoicesError } = await supabase
+    .from("invoices")
+    .select("order_id");
+
+  if (invoicesError) {
+    return {
+      data: null,
+      error: `invoicesの取得に失敗しました: ${invoicesError.message}`,
+    };
+  }
+
+  return {
+    data: new Set((invoices ?? []).map((invoice) => invoice.order_id)),
+    error: null,
+  };
+}
+
 export function getAggregatedStatus(statuses: {
   manufacturingStatus: string;
   deliveryStatus: string;

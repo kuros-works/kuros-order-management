@@ -3,7 +3,10 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase-server";
-import { getOrdersWithRemainingQuantity } from "@/lib/backlog";
+import {
+  getInvoicedOrderIds,
+  getOrdersWithRemainingQuantity,
+} from "@/lib/backlog";
 
 export type CreateBatchInvoiceState = {
   error: string | null;
@@ -47,6 +50,13 @@ export async function createBatchInvoice(
     return { error: backlogError };
   }
 
+  const { data: invoicedOrderIds, error: invoicedOrderIdsError } =
+    await getInvoicedOrderIds(supabase);
+
+  if (invoicedOrderIdsError) {
+    return { error: invoicedOrderIdsError };
+  }
+
   const orderIdSet = new Set(orderIds);
   const eligibleOrderIds = (backlog ?? [])
     .filter(
@@ -54,7 +64,8 @@ export async function createBatchInvoice(
         orderIdSet.has(order.id) &&
         order.company_id === companyId &&
         order.remaining_quantity === 0 &&
-        order.batch_invoice_id === null,
+        order.batch_invoice_id === null &&
+        !invoicedOrderIds?.has(order.id),
     )
     .map((order) => order.id);
 
