@@ -88,6 +88,21 @@ export async function createReceipt(
 
   if (ordersUpdateError) {
     await supabase.from("receipts").delete().eq("id", receipt.id);
+
+    const { error: rollbackError } = await supabase
+      .from("batch_invoices")
+      .update({ payment_status: "未入金" })
+      .eq("id", batchInvoiceId);
+
+    if (rollbackError) {
+      console.error(
+        `batch_invoices(id=${batchInvoiceId})のpayment_statusロールバックに失敗しました: ${rollbackError.message}`,
+      );
+      return {
+        error: `ordersのcompletion_date更新に失敗し、さらにbatch_invoicesのpayment_statusを"未入金"に戻す処理にも失敗しました。手動でbatch_invoice_id=${batchInvoiceId}のpayment_statusを確認してください: ${ordersUpdateError.message}`,
+      };
+    }
+
     return {
       error: `ordersのcompletion_date更新に失敗しました: ${ordersUpdateError.message}`,
     };

@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase-server";
+import { SentFlagToggle } from "./sent-flag-toggle";
 
 export default async function Receipts() {
   const supabase = await createClient();
@@ -32,7 +33,10 @@ export default async function Receipts() {
 
   const columns =
     receipts && receipts.length > 0
-      ? Object.keys(receipts[0]).filter((col) => col !== "created_at")
+      ? Object.keys(receipts[0]).filter(
+          (col) =>
+            col !== "created_at" && col !== "sent_flag" && col !== "sent_date",
+        )
       : [];
 
   return (
@@ -55,6 +59,9 @@ export default async function Receipts() {
                     {col}
                   </th>
                 ))}
+                <th className="border border-zinc-300 bg-zinc-100 px-3 py-2 text-left">
+                  領収書送信状況
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -65,6 +72,12 @@ export default async function Receipts() {
                       {String(receipt[col] ?? "")}
                     </td>
                   ))}
+                  <td className="border border-zinc-300 px-3 py-2">
+                    <SentFlagToggle
+                      receiptId={receipt.id}
+                      sentFlag={Boolean(receipt.sent_flag)}
+                    />
+                  </td>
                 </tr>
               ))}
             </tbody>

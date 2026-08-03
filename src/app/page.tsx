@@ -8,6 +8,7 @@ const STATUS_COLUMNS = [
   { key: "invoice_status", label: "請求状況" },
   { key: "payment_status_label", label: "入金状況" },
   { key: "sent_status_label", label: "一括請求書送信状況" },
+  { key: "receipt_sent_status_label", label: "領収書送信状況" },
 ] as const;
 
 export default async function Home() {
@@ -62,6 +63,23 @@ export default async function Home() {
     );
   }
 
+  const { data: receipts, error: receiptsError } = await supabase
+    .from("receipts")
+    .select("batch_invoice_id, sent_flag");
+
+  if (receiptsError) {
+    return (
+      <div className="p-8">
+        <h1 className="text-xl font-bold text-red-600">
+          receiptsの取得に失敗しました
+        </h1>
+        <pre className="mt-4 whitespace-pre-wrap text-sm text-red-500">
+          {receiptsError.message}
+        </pre>
+      </div>
+    );
+  }
+
   const { data: workOrders, error: workOrdersError } = await supabase
     .from("work_orders")
     .select("order_id");
@@ -96,6 +114,11 @@ export default async function Home() {
       batchInvoice.id,
       batchInvoice.sent_flag,
     ]),
+  );
+  const receiptSentFlagByBatchInvoiceId = new Map(
+    (receipts ?? [])
+      .filter((receipt) => receipt.batch_invoice_id !== null)
+      .map((receipt) => [receipt.batch_invoice_id, receipt.sent_flag]),
   );
 
   const orders = (rawOrders ?? []).map((order) => {
@@ -134,6 +157,14 @@ export default async function Home() {
           ? "一括請求書送信済み"
           : "一括請求書未送信";
 
+    const receiptSentStatusLabel =
+      order.batch_invoice_id === null ||
+      !receiptSentFlagByBatchInvoiceId.has(order.batch_invoice_id)
+        ? "-"
+        : receiptSentFlagByBatchInvoiceId.get(order.batch_invoice_id)
+          ? "領収書送信済み"
+          : "領収書未送信";
+
     const aggregatedStatus = getAggregatedStatus({
       manufacturingStatus,
       deliveryStatus,
@@ -149,6 +180,7 @@ export default async function Home() {
       invoice_status: invoiceStatus,
       payment_status_label: paymentStatusLabel,
       sent_status_label: sentStatusLabel,
+      receipt_sent_status_label: receiptSentStatusLabel,
     };
   });
 
