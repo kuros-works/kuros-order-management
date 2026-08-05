@@ -1,11 +1,14 @@
 import { createClient } from "@/lib/supabase-server";
 import { SentFlagToggle } from "./sent-flag-toggle";
+import { PaymentConfirmForm } from "./payment-confirm-form";
 
 export default async function Receipts() {
   const supabase = await createClient();
   const { data: rawReceipts, error } = await supabase
     .from("receipts")
-    .select("*, companies(company_name)");
+    .select(
+      "*, invoices(invoice_code, issued_date, orders(order_code, subject, unit_price, quantity, companies(company_name)))",
+    );
 
   if (error) {
     return (
@@ -21,13 +24,38 @@ export default async function Receipts() {
   }
 
   const receipts = rawReceipts?.map((receipt) => {
-    const { company_id, companies, ...rest } = receipt as typeof receipt & {
-      company_id: unknown;
-      companies: { company_name: string } | null;
-    };
+    const { invoice_id, invoices, received_date, received_amount, ...rest } =
+      receipt as typeof receipt & {
+        invoice_id: unknown;
+        invoices: {
+          invoice_code: string;
+          issued_date: string;
+          orders: {
+            order_code: string;
+            subject: string;
+            unit_price: number | null;
+            quantity: number | null;
+            companies: { company_name: string } | null;
+          } | null;
+        } | null;
+      };
+    const orderInfo = invoices?.orders ?? null;
+    const suggestedAmount =
+      orderInfo?.unit_price !== null &&
+      orderInfo?.unit_price !== undefined &&
+      orderInfo?.quantity !== null &&
+      orderInfo?.quantity !== undefined
+        ? orderInfo.unit_price * orderInfo.quantity
+        : null;
     return {
       ...rest,
-      company_name: companies?.company_name ?? company_id,
+      received_date,
+      received_amount,
+      invoice_code: invoices?.invoice_code ?? invoice_id,
+      order_code: orderInfo?.order_code ?? null,
+      subject: orderInfo?.subject ?? null,
+      company_name: orderInfo?.companies?.company_name ?? null,
+      suggested_amount: suggestedAmount,
     };
   });
 
@@ -35,7 +63,12 @@ export default async function Receipts() {
     receipts && receipts.length > 0
       ? Object.keys(receipts[0]).filter(
           (col) =>
-            col !== "created_at" && col !== "sent_flag" && col !== "sent_date",
+            col !== "created_at" &&
+            col !== "sent_flag" &&
+            col !== "sent_date" &&
+            col !== "received_date" &&
+            col !== "received_amount" &&
+            col !== "suggested_amount",
         )
       : [];
 
@@ -60,6 +93,9 @@ export default async function Receipts() {
                   </th>
                 ))}
                 <th className="border border-zinc-300 bg-zinc-100 px-3 py-2 text-left">
+                  入金
+                </th>
+                <th className="border border-zinc-300 bg-zinc-100 px-3 py-2 text-left">
                   領収書送信状況
                 </th>
               </tr>
@@ -72,6 +108,19 @@ export default async function Receipts() {
                       {String(receipt[col] ?? "")}
                     </td>
                   ))}
+                  <td className="border border-zinc-300 px-3 py-2">
+                    {receipt.received_date ? (
+                      <span>
+                        {receipt.received_date} /{" "}
+                        {receipt.received_amount?.toLocaleString("ja-JP")}円
+                      </span>
+                    ) : (
+                      <PaymentConfirmForm
+                        receiptId={receipt.id}
+                        defaultAmount={receipt.suggested_amount}
+                      />
+                    )}
+                  </td>
                   <td className="border border-zinc-300 px-3 py-2">
                     <SentFlagToggle
                       receiptId={receipt.id}

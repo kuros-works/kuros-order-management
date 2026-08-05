@@ -77,18 +77,35 @@ export async function createInvoice(
   const nextNumber = Number.isFinite(lastNumber) ? lastNumber + 1 : 1;
   const invoiceCode = `INV-${String(nextNumber).padStart(4, "0")}`;
 
-  const { error: insertError } = await supabase.from("invoices").insert({
-    order_id: orderId,
-    company_id: order.company_id,
-    invoice_code: invoiceCode,
-    issued_date: issuedDate,
-  });
+  const { data: invoice, error: insertError } = await supabase
+    .from("invoices")
+    .insert({
+      order_id: orderId,
+      company_id: order.company_id,
+      invoice_code: invoiceCode,
+      issued_date: issuedDate,
+    })
+    .select("id")
+    .single();
 
-  if (insertError) {
-    if (insertError.code === "23505") {
+  if (insertError || !invoice) {
+    if (insertError?.code === "23505") {
       return { error: "この受注はすでに請求済みです" };
     }
-    return { error: `invoicesへの保存に失敗しました: ${insertError.message}` };
+    return {
+      error: `invoicesへの保存に失敗しました: ${insertError?.message}`,
+    };
+  }
+
+  const { error: receiptInsertError } = await supabase
+    .from("receipts")
+    .insert({ invoice_id: invoice.id });
+
+  if (receiptInsertError) {
+    await supabase.from("invoices").delete().eq("id", invoice.id);
+    return {
+      error: `receiptsへの保存に失敗しました: ${receiptInsertError.message}`,
+    };
   }
 
   revalidatePath("/invoices");

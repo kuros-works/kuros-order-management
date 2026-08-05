@@ -7,7 +7,7 @@ const STATUS_COLUMNS = [
   { key: "delivery_status", label: "納品状況" },
   { key: "invoice_status", label: "請求状況" },
   { key: "payment_status_label", label: "入金状況" },
-  { key: "sent_status_label", label: "一括請求書送信状況" },
+  { key: "sent_status_label", label: "請求書送信状況" },
   { key: "receipt_sent_status_label", label: "領収書送信状況" },
 ] as const;
 
@@ -31,7 +31,7 @@ export default async function Home() {
 
   const { data: invoices, error: invoicesError } = await supabase
     .from("invoices")
-    .select("order_id");
+    .select("order_id, payment_status, sent_flag, receipts(sent_flag)");
 
   if (invoicesError) {
     return (
@@ -41,40 +41,6 @@ export default async function Home() {
         </h1>
         <pre className="mt-4 whitespace-pre-wrap text-sm text-red-500">
           {invoicesError.message}
-        </pre>
-      </div>
-    );
-  }
-
-  const { data: batchInvoices, error: batchInvoicesError } = await supabase
-    .from("batch_invoices")
-    .select("id, payment_status, sent_flag");
-
-  if (batchInvoicesError) {
-    return (
-      <div className="p-8">
-        <h1 className="text-xl font-bold text-red-600">
-          batch_invoicesの取得に失敗しました
-        </h1>
-        <pre className="mt-4 whitespace-pre-wrap text-sm text-red-500">
-          {batchInvoicesError.message}
-        </pre>
-      </div>
-    );
-  }
-
-  const { data: receipts, error: receiptsError } = await supabase
-    .from("receipts")
-    .select("batch_invoice_id, sent_flag");
-
-  if (receiptsError) {
-    return (
-      <div className="p-8">
-        <h1 className="text-xl font-bold text-red-600">
-          receiptsの取得に失敗しました
-        </h1>
-        <pre className="mt-4 whitespace-pre-wrap text-sm text-red-500">
-          {receiptsError.message}
         </pre>
       </div>
     );
@@ -97,28 +63,31 @@ export default async function Home() {
     );
   }
 
-  const invoicedOrderIds = new Set(
-    (invoices ?? []).map((invoice) => invoice.order_id),
-  );
   const workOrderedOrderIds = new Set(
     (workOrders ?? []).map((workOrder) => workOrder.order_id),
   );
-  const paymentStatusByBatchInvoiceId = new Map(
-    (batchInvoices ?? []).map((batchInvoice) => [
-      batchInvoice.id,
-      batchInvoice.payment_status,
-    ]),
-  );
-  const sentFlagByBatchInvoiceId = new Map(
-    (batchInvoices ?? []).map((batchInvoice) => [
-      batchInvoice.id,
-      batchInvoice.sent_flag,
-    ]),
-  );
-  const receiptSentFlagByBatchInvoiceId = new Map(
-    (receipts ?? [])
-      .filter((receipt) => receipt.batch_invoice_id !== null)
-      .map((receipt) => [receipt.batch_invoice_id, receipt.sent_flag]),
+
+  type InvoiceStatusRow = {
+    order_id: number;
+    payment_status: string;
+    sent_flag: boolean;
+    receipts: { sent_flag: boolean }[] | { sent_flag: boolean } | null;
+  };
+
+  const invoiceByOrderId = new Map(
+    ((invoices ?? []) as InvoiceStatusRow[]).map((invoice) => {
+      const receiptRecord = Array.isArray(invoice.receipts)
+        ? invoice.receipts[0]
+        : invoice.receipts;
+      return [
+        invoice.order_id,
+        {
+          paymentStatus: invoice.payment_status,
+          sentFlag: invoice.sent_flag,
+          receiptSentFlag: receiptRecord?.sent_flag ?? null,
+        },
+      ];
+    }),
   );
 
   const orders = (rawOrders ?? []).map((order) => {
@@ -133,37 +102,28 @@ export default async function Home() {
           ? "完納"
           : "分納";
 
+    const orderInvoice = invoiceByOrderId.get(order.id);
+
     const invoiceStatus =
-      deliveryStatus !== "完納"
-        ? ""
-        : order.batch_invoice_id !== null
-          ? "一括請求済み"
-          : invoicedOrderIds.has(order.id)
-            ? "個別請求済み"
-            : "未請求";
+      deliveryStatus !== "完納" ? "" : orderInvoice ? "請求済み" : "未請求";
 
-    const paymentStatusLabel =
-      order.batch_invoice_id === null
-        ? "-"
-        : paymentStatusByBatchInvoiceId.get(order.batch_invoice_id) ===
-            "入金済み"
-          ? "入金済み"
-          : "未入金";
+    const paymentStatusLabel = !orderInvoice
+      ? "-"
+      : orderInvoice.paymentStatus === "入金済み"
+        ? "入金済み"
+        : "未入金";
 
-    const sentStatusLabel =
-      order.batch_invoice_id === null
-        ? "-"
-        : sentFlagByBatchInvoiceId.get(order.batch_invoice_id)
-          ? "一括請求書送信済み"
-          : "一括請求書未送信";
+    const sentStatusLabel = !orderInvoice
+      ? "-"
+      : orderInvoice.sentFlag
+        ? "請求書送信済み"
+        : "請求書未送信";
 
-    const receiptSentStatusLabel =
-      order.batch_invoice_id === null ||
-      !receiptSentFlagByBatchInvoiceId.has(order.batch_invoice_id)
-        ? "-"
-        : receiptSentFlagByBatchInvoiceId.get(order.batch_invoice_id)
-          ? "領収書送信済み"
-          : "領収書未送信";
+    const receiptSentStatusLabel = !orderInvoice
+      ? "-"
+      : orderInvoice.receiptSentFlag
+        ? "領収書送信済み"
+        : "領収書未送信";
 
     const aggregatedStatus = getAggregatedStatus({
       manufacturingStatus,

@@ -115,7 +115,7 @@ export function getAggregatedStatus(statuses: {
   if (paymentStatusLabel === "入金済み") {
     return "入金済み";
   }
-  if (invoiceStatus === "一括請求済み" || invoiceStatus === "個別請求済み") {
+  if (invoiceStatus === "請求済み") {
     return "請求済み";
   }
   if (deliveryStatus === "完納") {
