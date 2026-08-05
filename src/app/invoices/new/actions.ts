@@ -97,17 +97,6 @@ export async function createInvoice(
     };
   }
 
-  const { error: receiptInsertError } = await supabase
-    .from("receipts")
-    .insert({ invoice_id: invoice.id });
-
-  if (receiptInsertError) {
-    await supabase.from("invoices").delete().eq("id", invoice.id);
-    return {
-      error: `receiptsへの保存に失敗しました: ${receiptInsertError.message}`,
-    };
-  }
-
   revalidatePath("/invoices");
   redirect("/invoices");
 }
