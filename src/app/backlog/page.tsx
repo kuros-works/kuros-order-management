@@ -49,6 +49,9 @@ export default async function Backlog() {
                 <th className="border border-zinc-300 bg-zinc-100 px-3 py-2 text-left">
                   納品日
                 </th>
+                <th className="border border-zinc-300 bg-zinc-100 px-3 py-2 text-left">
+                  備考
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -77,6 +80,9 @@ export default async function Backlog() {
                   </td>
                   <td className="border border-zinc-300 px-3 py-2">
                     {order.latest_delivery_date ?? "-"}
+                  </td>
+                  <td className="border border-zinc-300 px-3 py-2">
+                    {order.notes_count > 0 ? `備考: ${order.notes_count}件` : ""}
                   </td>
                 </tr>
               ))}

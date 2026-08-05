@@ -18,6 +18,7 @@ export type OrderWithRemainingQuantity = {
   delivered_quantity: number;
   remaining_quantity: number;
   latest_delivery_date: string | null;
+  notes_count: number;
 };
 
 export async function getOrdersWithRemainingQuantity(
@@ -38,7 +39,7 @@ export async function getOrdersWithRemainingQuantity(
   const { data: deliveryNoteItems, error: deliveryNoteItemsError } =
     await supabase
       .from("delivery_note_items")
-      .select("order_id, delivered_quantity, delivery_notes(created_date)");
+      .select("order_id, delivered_quantity, notes, delivery_notes(created_date)");
 
   if (deliveryNoteItemsError) {
     return {
@@ -49,6 +50,7 @@ export async function getOrdersWithRemainingQuantity(
 
   const deliveredByOrderId = new Map<number, number>();
   const latestDeliveryDateByOrderId = new Map<number, string>();
+  const notesCountByOrderId = new Map<number, number>();
   for (const item of deliveryNoteItems ?? []) {
     const { delivery_notes } = item as typeof item & {
       delivery_notes: { created_date: string } | null;
@@ -64,6 +66,11 @@ export async function getOrdersWithRemainingQuantity(
         latestDeliveryDateByOrderId.set(item.order_id, createdDate);
       }
     }
+
+    if (item.notes) {
+      const currentNotesCount = notesCountByOrderId.get(item.order_id) ?? 0;
+      notesCountByOrderId.set(item.order_id, currentNotesCount + 1);
+    }
   }
 
   const orders = (rawOrders ?? []).map((order) => {
@@ -77,6 +84,7 @@ export async function getOrdersWithRemainingQuantity(
       delivered_quantity: deliveredQuantity,
       remaining_quantity: order.quantity - deliveredQuantity,
       latest_delivery_date: latestDeliveryDateByOrderId.get(order.id) ?? null,
+      notes_count: notesCountByOrderId.get(order.id) ?? 0,
     };
   });
 

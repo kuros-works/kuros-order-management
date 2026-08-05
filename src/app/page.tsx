@@ -149,7 +149,10 @@ export default async function Home() {
     orders.length > 0
       ? Object.keys(orders[0]).filter(
           (col) =>
-            col !== "created_at" && col !== "status" && !statusKeys.includes(col),
+            col !== "created_at" &&
+            col !== "status" &&
+            col !== "notes_count" &&
+            !statusKeys.includes(col),
         )
       : [];
 
@@ -171,6 +174,9 @@ export default async function Home() {
                     {col}
                   </th>
                 ))}
+                <th className="border border-zinc-300 bg-zinc-100 px-3 py-2 text-left">
+                  備考
+                </th>
                 {STATUS_COLUMNS.map((col) => (
                   <th
                     key={col.key}
@@ -189,6 +195,11 @@ export default async function Home() {
                       {String(order[col as keyof typeof order] ?? "")}
                     </td>
                   ))}
+                  <td className="border border-zinc-300 px-3 py-2">
+                    {order.notes_count > 0
+                      ? `備考: ${order.notes_count}件`
+                      : ""}
+                  </td>
                   {STATUS_COLUMNS.map((col) => (
                     <td
                       key={col.key}
