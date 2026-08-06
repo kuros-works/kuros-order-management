@@ -1,4 +1,6 @@
 import { createClient } from "@/lib/supabase-server";
+import { NotesInlineEditor } from "@/components/NotesInlineEditor";
+import { updateWorkOrderNotes } from "./actions";
 
 export default async function WorkOrders() {
   const supabase = await createClient();
@@ -22,8 +24,9 @@ export default async function WorkOrders() {
   }
 
   const workOrders = rawWorkOrders?.map((workOrder) => {
-    const { order_id, orders, ...rest } = workOrder as typeof workOrder & {
+    const { order_id, orders, notes, ...rest } = workOrder as typeof workOrder & {
       order_id: unknown;
+      notes: string | null;
       orders: {
         order_code: string;
         subject: string;
@@ -42,13 +45,19 @@ export default async function WorkOrders() {
       company_name: orders?.companies?.company_name ?? null,
       quantity: orders?.quantity ?? null,
       desired_delivery_date: orders?.desired_delivery_date ?? null,
-      notes: orders?.notes ?? null,
+      work_order_notes: notes ?? null,
+      order_notes: orders?.notes ?? null,
     };
   });
 
   const columns =
     workOrders && workOrders.length > 0
-      ? Object.keys(workOrders[0]).filter((col) => col !== "created_at")
+      ? Object.keys(workOrders[0]).filter(
+          (col) =>
+            col !== "created_at" &&
+            col !== "work_order_notes" &&
+            col !== "order_notes",
+        )
       : [];
 
   return (
@@ -71,6 +80,9 @@ export default async function WorkOrders() {
                     {col}
                   </th>
                 ))}
+                <th className="border border-zinc-300 bg-zinc-100 px-3 py-2 text-left">
+                  備考
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -81,6 +93,13 @@ export default async function WorkOrders() {
                       {String(workOrder[col] ?? "")}
                     </td>
                   ))}
+                  <td className="border border-zinc-300 px-3 py-2">
+                    <NotesInlineEditor
+                      id={workOrder.id}
+                      initialNotes={workOrder.work_order_notes}
+                      onSave={updateWorkOrderNotes}
+                    />
+                  </td>
                 </tr>
               ))}
             </tbody>
