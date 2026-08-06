@@ -21,6 +21,7 @@ export type OrderWithRemainingQuantity = {
   notes_count: number;
   receipt_notes: string | null;
   work_order_notes: string | null;
+  invoice_notes: string | null;
 };
 
 export async function getOrdersWithRemainingQuantity(
@@ -87,6 +88,22 @@ export async function getOrdersWithRemainingQuantity(
     workOrderNotesByOrderId.set(workOrder.order_id, workOrder.notes);
   }
 
+  const { data: invoices, error: invoicesError } = await supabase
+    .from("invoices")
+    .select("order_id, notes");
+
+  if (invoicesError) {
+    return {
+      data: null,
+      error: `invoicesの取得に失敗しました: ${invoicesError.message}`,
+    };
+  }
+
+  const invoiceNotesByOrderId = new Map<number, string | null>();
+  for (const invoice of invoices ?? []) {
+    invoiceNotesByOrderId.set(invoice.order_id, invoice.notes);
+  }
+
   const deliveredByOrderId = new Map<number, number>();
   const latestDeliveryDateByOrderId = new Map<number, string>();
   const notesCountByOrderId = new Map<number, number>();
@@ -126,6 +143,7 @@ export async function getOrdersWithRemainingQuantity(
       notes_count: notesCountByOrderId.get(order.id) ?? 0,
       receipt_notes: receiptNotesByOrderId.get(order.id) ?? null,
       work_order_notes: workOrderNotesByOrderId.get(order.id) ?? null,
+      invoice_notes: invoiceNotesByOrderId.get(order.id) ?? null,
     };
   });
 

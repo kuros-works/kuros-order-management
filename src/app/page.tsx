@@ -154,6 +154,7 @@ export default async function Home() {
             col !== "notes_count" &&
             col !== "receipt_notes" &&
             col !== "work_order_notes" &&
+            col !== "invoice_notes" &&
             !statusKeys.includes(col),
         )
       : [];
@@ -185,6 +186,9 @@ export default async function Home() {
                 <th className="border border-zinc-300 bg-zinc-100 px-3 py-2 text-left">
                   製造指示書備考
                 </th>
+                <th className="border border-zinc-300 bg-zinc-100 px-3 py-2 text-left">
+                  請求書備考
+                </th>
                 {STATUS_COLUMNS.map((col) => (
                   <th
                     key={col.key}
@@ -213,6 +217,9 @@ export default async function Home() {
                   </td>
                   <td className="border border-zinc-300 px-3 py-2">
                     {order.work_order_notes ?? ""}
+                  </td>
+                  <td className="border border-zinc-300 px-3 py-2">
+                    {order.invoice_notes ?? ""}
                   </td>
                   {STATUS_COLUMNS.map((col) => (
                     <td
