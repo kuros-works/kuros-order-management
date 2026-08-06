@@ -1,4 +1,6 @@
 import { createClient } from "@/lib/supabase-server";
+import { NotesInlineEditor } from "@/components/NotesInlineEditor";
+import { updateInvoiceNotes } from "./actions";
 
 export default async function Invoices() {
   const supabase = await createClient();
@@ -52,7 +54,9 @@ export default async function Invoices() {
 
   const columns =
     invoices && invoices.length > 0
-      ? Object.keys(invoices[0]).filter((col) => col !== "created_at")
+      ? Object.keys(invoices[0]).filter(
+          (col) => col !== "created_at" && col !== "notes",
+        )
       : [];
 
   return (
@@ -75,6 +79,9 @@ export default async function Invoices() {
                     {col}
                   </th>
                 ))}
+                <th className="border border-zinc-300 bg-zinc-100 px-3 py-2 text-left">
+                  備考
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -85,6 +92,13 @@ export default async function Invoices() {
                       {String(invoice[col] ?? "")}
                     </td>
                   ))}
+                  <td className="border border-zinc-300 px-3 py-2">
+                    <NotesInlineEditor
+                      id={invoice.id}
+                      initialNotes={invoice.notes ?? null}
+                      onSave={updateInvoiceNotes}
+                    />
+                  </td>
                 </tr>
               ))}
             </tbody>
