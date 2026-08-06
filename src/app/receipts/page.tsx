@@ -1,6 +1,8 @@
 import { createClient } from "@/lib/supabase-server";
+import { NotesInlineEditor } from "@/components/NotesInlineEditor";
 import { SentFlagToggle } from "./sent-flag-toggle";
 import { PaymentConfirmForm } from "./payment-confirm-form";
+import { updateReceiptNotes } from "./actions";
 
 export default async function Receipts() {
   const supabase = await createClient();
@@ -68,7 +70,8 @@ export default async function Receipts() {
             col !== "sent_date" &&
             col !== "received_date" &&
             col !== "received_amount" &&
-            col !== "suggested_amount",
+            col !== "suggested_amount" &&
+            col !== "notes",
         )
       : [];
 
@@ -98,6 +101,9 @@ export default async function Receipts() {
                 <th className="border border-zinc-300 bg-zinc-100 px-3 py-2 text-left">
                   領収書送信状況
                 </th>
+                <th className="border border-zinc-300 bg-zinc-100 px-3 py-2 text-left">
+                  備考
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -125,6 +131,13 @@ export default async function Receipts() {
                     <SentFlagToggle
                       receiptId={receipt.id}
                       sentFlag={Boolean(receipt.sent_flag)}
+                    />
+                  </td>
+                  <td className="border border-zinc-300 px-3 py-2">
+                    <NotesInlineEditor
+                      id={receipt.id}
+                      initialNotes={receipt.notes ?? null}
+                      onSave={updateReceiptNotes}
                     />
                   </td>
                 </tr>

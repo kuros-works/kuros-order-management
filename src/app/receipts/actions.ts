@@ -31,6 +31,27 @@ export async function toggleSentFlag(
   return { error: null };
 }
 
+export async function updateReceiptNotes(
+  receiptId: number,
+  notes: string,
+): Promise<{ error: string | null }> {
+  const supabase = await createClient();
+
+  const { error: updateError } = await supabase
+    .from("receipts")
+    .update({ notes: notes || null })
+    .eq("id", receiptId);
+
+  if (updateError) {
+    return {
+      error: `receiptsの更新に失敗しました: ${updateError.message}`,
+    };
+  }
+
+  revalidatePath("/receipts");
+  return { error: null };
+}
+
 export async function confirmPayment(
   receiptId: number,
   receivedDate: string,
