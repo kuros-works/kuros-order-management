@@ -57,6 +57,9 @@ export default async function Receipts() {
       order_code: orderInfo?.order_code ?? null,
       subject: orderInfo?.subject ?? null,
       company_name: orderInfo?.companies?.company_name ?? null,
+      unit_price: orderInfo?.unit_price ?? null,
+      quantity: orderInfo?.quantity ?? null,
+      amount: suggestedAmount,
       suggested_amount: suggestedAmount,
     };
   });
