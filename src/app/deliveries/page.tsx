@@ -4,7 +4,9 @@ export default async function Deliveries() {
   const supabase = await createClient();
   const { data: rawDeliveryNoteItems, error } = await supabase
     .from("delivery_note_items")
-    .select("*, orders(order_code, subject, companies(company_name))");
+    .select(
+      "*, orders(order_code, subject, unit_price, companies(company_name))",
+    );
 
   if (error) {
     return (
@@ -25,14 +27,22 @@ export default async function Deliveries() {
       orders: {
         order_code: string;
         subject: string;
+        unit_price: number | null;
         companies: { company_name: string } | null;
       } | null;
     };
+    const unit_price = orders?.unit_price ?? null;
+    const delivered_quantity = rest.delivered_quantity ?? null;
     return {
       ...rest,
       order_code: orders?.order_code ?? order_id,
       subject: orders?.subject ?? null,
       company_name: orders?.companies?.company_name ?? null,
+      unit_price,
+      amount:
+        unit_price !== null && delivered_quantity !== null
+          ? unit_price * delivered_quantity
+          : null,
     };
   });
 
