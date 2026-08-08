@@ -1,13 +1,13 @@
 import { createClient } from "@/lib/supabase-server";
 import { NotesInlineEditor } from "@/components/NotesInlineEditor";
-import { updateInvoiceNotes } from "./actions";
+import { updateOrderNotes } from "./actions";
 
 export default async function Invoices() {
   const supabase = await createClient();
   const { data: rawInvoices, error } = await supabase
     .from("invoices")
     .select(
-      "*, orders(order_code, subject, unit_price, quantity), companies(company_name)",
+      "*, orders(order_code, subject, unit_price, quantity, notes), companies(company_name)",
     );
 
   if (error) {
@@ -26,13 +26,14 @@ export default async function Invoices() {
   const invoices = rawInvoices?.map((invoice) => {
     const { order_id, company_id, orders, companies, ...rest } =
       invoice as typeof invoice & {
-        order_id: unknown;
+        order_id: number;
         company_id: unknown;
         orders: {
           order_code: string;
           subject: string;
           unit_price: number | null;
           quantity: number | null;
+          notes: string | null;
         } | null;
         companies: { company_name: string } | null;
       };
@@ -40,6 +41,7 @@ export default async function Invoices() {
     const quantity = orders?.quantity ?? null;
     return {
       ...rest,
+      order_id,
       order_code: orders?.order_code ?? order_id,
       subject: orders?.subject ?? null,
       company_name: companies?.company_name ?? company_id,
@@ -49,13 +51,18 @@ export default async function Invoices() {
         unit_price !== null && quantity !== null
           ? unit_price * quantity
           : null,
+      order_notes: orders?.notes ?? null,
     };
   });
 
   const columns =
     invoices && invoices.length > 0
       ? Object.keys(invoices[0]).filter(
-          (col) => col !== "created_at" && col !== "notes",
+          (col) =>
+            col !== "created_at" &&
+            col !== "notes" &&
+            col !== "order_id" &&
+            col !== "order_notes",
         )
       : [];
 
@@ -94,9 +101,9 @@ export default async function Invoices() {
                   ))}
                   <td className="border border-zinc-300 px-3 py-2">
                     <NotesInlineEditor
-                      id={invoice.id}
-                      initialNotes={invoice.notes ?? null}
-                      onSave={updateInvoiceNotes}
+                      id={invoice.order_id}
+                      initialNotes={invoice.order_notes}
+                      onSave={updateOrderNotes}
                     />
                   </td>
                 </tr>
