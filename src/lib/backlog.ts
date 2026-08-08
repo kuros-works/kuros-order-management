@@ -72,22 +72,6 @@ export async function getOrdersWithRemainingQuantity(
     }
   }
 
-  const { data: workOrders, error: workOrdersError } = await supabase
-    .from("work_orders")
-    .select("order_id, notes");
-
-  if (workOrdersError) {
-    return {
-      data: null,
-      error: `work_ordersの取得に失敗しました: ${workOrdersError.message}`,
-    };
-  }
-
-  const workOrderNotesByOrderId = new Map<number, string | null>();
-  for (const workOrder of workOrders ?? []) {
-    workOrderNotesByOrderId.set(workOrder.order_id, workOrder.notes);
-  }
-
   const { data: invoices, error: invoicesError } = await supabase
     .from("invoices")
     .select("order_id, notes");
@@ -142,7 +126,7 @@ export async function getOrdersWithRemainingQuantity(
       latest_delivery_date: latestDeliveryDateByOrderId.get(order.id) ?? null,
       notes_count: notesCountByOrderId.get(order.id) ?? 0,
       receipt_notes: receiptNotesByOrderId.get(order.id) ?? null,
-      work_order_notes: workOrderNotesByOrderId.get(order.id) ?? null,
+      work_order_notes: order.notes ?? null,
       invoice_notes: invoiceNotesByOrderId.get(order.id) ?? null,
     };
   });
