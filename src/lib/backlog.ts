@@ -18,9 +18,6 @@ export type OrderWithRemainingQuantity = {
   delivered_quantity: number;
   remaining_quantity: number;
   latest_delivery_date: string | null;
-  receipt_notes: string | null;
-  work_order_notes: string | null;
-  invoice_notes: string | null;
 };
 
 export async function getOrdersWithRemainingQuantity(
@@ -48,43 +45,6 @@ export async function getOrdersWithRemainingQuantity(
       data: null,
       error: `delivery_note_itemsの取得に失敗しました: ${deliveryNoteItemsError.message}`,
     };
-  }
-
-  const { data: receipts, error: receiptsError } = await supabase
-    .from("receipts")
-    .select("notes, invoices(order_id)");
-
-  if (receiptsError) {
-    return {
-      data: null,
-      error: `receiptsの取得に失敗しました: ${receiptsError.message}`,
-    };
-  }
-
-  const receiptNotesByOrderId = new Map<number, string | null>();
-  for (const receipt of receipts ?? []) {
-    const { invoices } = receipt as typeof receipt & {
-      invoices: { order_id: number } | null;
-    };
-    if (invoices?.order_id != null) {
-      receiptNotesByOrderId.set(invoices.order_id, receipt.notes);
-    }
-  }
-
-  const { data: invoices, error: invoicesError } = await supabase
-    .from("invoices")
-    .select("order_id, notes");
-
-  if (invoicesError) {
-    return {
-      data: null,
-      error: `invoicesの取得に失敗しました: ${invoicesError.message}`,
-    };
-  }
-
-  const invoiceNotesByOrderId = new Map<number, string | null>();
-  for (const invoice of invoices ?? []) {
-    invoiceNotesByOrderId.set(invoice.order_id, invoice.notes);
   }
 
   const deliveredByOrderId = new Map<number, number>();
@@ -117,9 +77,6 @@ export async function getOrdersWithRemainingQuantity(
       delivered_quantity: deliveredQuantity,
       remaining_quantity: order.quantity - deliveredQuantity,
       latest_delivery_date: latestDeliveryDateByOrderId.get(order.id) ?? null,
-      receipt_notes: receiptNotesByOrderId.get(order.id) ?? null,
-      work_order_notes: order.notes ?? null,
-      invoice_notes: invoiceNotesByOrderId.get(order.id) ?? null,
     };
   });
 
