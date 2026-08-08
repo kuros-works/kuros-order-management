@@ -2,14 +2,14 @@ import { createClient } from "@/lib/supabase-server";
 import { NotesInlineEditor } from "@/components/NotesInlineEditor";
 import { SentFlagToggle } from "./sent-flag-toggle";
 import { PaymentConfirmForm } from "./payment-confirm-form";
-import { updateReceiptNotes } from "./actions";
+import { updateOrderNotes } from "./actions";
 
 export default async function Receipts() {
   const supabase = await createClient();
   const { data: rawReceipts, error } = await supabase
     .from("receipts")
     .select(
-      "*, invoices(invoice_code, issued_date, orders(order_code, subject, unit_price, quantity, companies(company_name)))",
+      "*, invoices(invoice_code, issued_date, orders(id, order_code, subject, unit_price, quantity, notes, companies(company_name)))",
     );
 
   if (error) {
@@ -33,10 +33,12 @@ export default async function Receipts() {
           invoice_code: string;
           issued_date: string;
           orders: {
+            id: number;
             order_code: string;
             subject: string;
             unit_price: number | null;
             quantity: number | null;
+            notes: string | null;
             companies: { company_name: string } | null;
           } | null;
         } | null;
@@ -54,6 +56,7 @@ export default async function Receipts() {
       received_date,
       received_amount,
       invoice_code: invoices?.invoice_code ?? invoice_id,
+      order_id: orderInfo!.id,
       order_code: orderInfo?.order_code ?? null,
       subject: orderInfo?.subject ?? null,
       company_name: orderInfo?.companies?.company_name ?? null,
@@ -61,6 +64,7 @@ export default async function Receipts() {
       quantity: orderInfo?.quantity ?? null,
       amount: suggestedAmount,
       suggested_amount: suggestedAmount,
+      order_notes: orderInfo?.notes ?? null,
     };
   });
 
@@ -74,7 +78,9 @@ export default async function Receipts() {
             col !== "received_date" &&
             col !== "received_amount" &&
             col !== "suggested_amount" &&
-            col !== "notes",
+            col !== "notes" &&
+            col !== "order_id" &&
+            col !== "order_notes",
         )
       : [];
 
@@ -138,9 +144,9 @@ export default async function Receipts() {
                   </td>
                   <td className="border border-zinc-300 px-3 py-2">
                     <NotesInlineEditor
-                      id={receipt.id}
-                      initialNotes={receipt.notes ?? null}
-                      onSave={updateReceiptNotes}
+                      id={receipt.order_id}
+                      initialNotes={receipt.order_notes}
+                      onSave={updateOrderNotes}
                     />
                   </td>
                 </tr>

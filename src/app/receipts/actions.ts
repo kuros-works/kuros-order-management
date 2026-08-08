@@ -31,24 +31,25 @@ export async function toggleSentFlag(
   return { error: null };
 }
 
-export async function updateReceiptNotes(
-  receiptId: number,
+export async function updateOrderNotes(
+  orderId: number,
   notes: string,
 ): Promise<{ error: string | null }> {
   const supabase = await createClient();
 
   const { error: updateError } = await supabase
-    .from("receipts")
+    .from("orders")
     .update({ notes: notes || null })
-    .eq("id", receiptId);
+    .eq("id", orderId);
 
   if (updateError) {
     return {
-      error: `receiptsの更新に失敗しました: ${updateError.message}`,
+      error: `ordersの更新に失敗しました: ${updateError.message}`,
     };
   }
 
   revalidatePath("/receipts");
+  revalidatePath("/");
   return { error: null };
 }
 
