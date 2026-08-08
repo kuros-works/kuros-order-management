@@ -29,8 +29,6 @@ export async function createDelivery(
     return { error: "納品日を入力してください" };
   }
 
-  const notes = String(formData.get("notes") ?? "").trim();
-
   const { data: lastDeliveryNote, error: lastDeliveryNoteError } =
     await supabase
       .from("delivery_notes")
@@ -72,7 +70,6 @@ export async function createDelivery(
       delivery_note_id: deliveryNote.id,
       order_id: orderId,
       delivered_quantity: deliveredQuantity,
-      notes: notes || null,
     });
 
   if (deliveryNoteItemError) {

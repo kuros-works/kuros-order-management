@@ -1,11 +1,13 @@
 import { createClient } from "@/lib/supabase-server";
+import { NotesInlineEditor } from "@/components/NotesInlineEditor";
+import { updateOrderNotes } from "./actions";
 
 export default async function Deliveries() {
   const supabase = await createClient();
   const { data: rawDeliveryNoteItems, error } = await supabase
     .from("delivery_note_items")
     .select(
-      "*, orders(order_code, subject, unit_price, companies(company_name))",
+      "*, orders(order_code, subject, unit_price, notes, companies(company_name))",
     );
 
   if (error) {
@@ -23,11 +25,12 @@ export default async function Deliveries() {
 
   const deliveryNoteItems = rawDeliveryNoteItems?.map((item) => {
     const { order_id, orders, ...rest } = item as typeof item & {
-      order_id: unknown;
+      order_id: number;
       orders: {
         order_code: string;
         subject: string;
         unit_price: number | null;
+        notes: string | null;
         companies: { company_name: string } | null;
       } | null;
     };
@@ -35,6 +38,7 @@ export default async function Deliveries() {
     const delivered_quantity = rest.delivered_quantity ?? null;
     return {
       ...rest,
+      order_id,
       order_code: orders?.order_code ?? order_id,
       subject: orders?.subject ?? null,
       company_name: orders?.companies?.company_name ?? null,
@@ -43,12 +47,19 @@ export default async function Deliveries() {
         unit_price !== null && delivered_quantity !== null
           ? unit_price * delivered_quantity
           : null,
+      order_notes: orders?.notes ?? null,
     };
   });
 
   const columns =
     deliveryNoteItems && deliveryNoteItems.length > 0
-      ? Object.keys(deliveryNoteItems[0]).filter((col) => col !== "created_at")
+      ? Object.keys(deliveryNoteItems[0]).filter(
+          (col) =>
+            col !== "created_at" &&
+            col !== "notes" &&
+            col !== "order_id" &&
+            col !== "order_notes",
+        )
       : [];
 
   return (
@@ -71,6 +82,9 @@ export default async function Deliveries() {
                     {col}
                   </th>
                 ))}
+                <th className="border border-zinc-300 bg-zinc-100 px-3 py-2 text-left">
+                  備考
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -81,6 +95,13 @@ export default async function Deliveries() {
                       {String(item[col] ?? "")}
                     </td>
                   ))}
+                  <td className="border border-zinc-300 px-3 py-2">
+                    <NotesInlineEditor
+                      id={item.order_id}
+                      initialNotes={item.order_notes}
+                      onSave={updateOrderNotes}
+                    />
+                  </td>
                 </tr>
               ))}
             </tbody>
