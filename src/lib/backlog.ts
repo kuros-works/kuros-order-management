@@ -103,6 +103,26 @@ export async function getInvoicedOrderIds(
   };
 }
 
+export async function getWorkOrderedOrderIds(
+  supabase: SupabaseClient,
+): Promise<{ data: Set<number> | null; error: string | null }> {
+  const { data: workOrders, error: workOrdersError } = await supabase
+    .from("work_orders")
+    .select("order_id");
+
+  if (workOrdersError) {
+    return {
+      data: null,
+      error: `work_ordersの取得に失敗しました: ${workOrdersError.message}`,
+    };
+  }
+
+  return {
+    data: new Set((workOrders ?? []).map((workOrder) => workOrder.order_id)),
+    error: null,
+  };
+}
+
 export function getAggregatedStatus(statuses: {
   manufacturingStatus: string;
   deliveryStatus: string;

@@ -1,4 +1,5 @@
 import { createClient } from "@/lib/supabase-server";
+import { getWorkOrderedOrderIds } from "@/lib/backlog";
 import { WorkOrderForm } from "./work-order-form";
 
 export default async function NewWorkOrderPage() {
@@ -21,10 +22,27 @@ export default async function NewWorkOrderPage() {
     );
   }
 
+  const { data: workOrderedOrderIds, error: workOrderedOrderIdsError } =
+    await getWorkOrderedOrderIds(supabase);
+
+  if (workOrderedOrderIdsError) {
+    return (
+      <div className="p-8">
+        <h1 className="text-xl font-bold text-red-600">
+          {workOrderedOrderIdsError}
+        </h1>
+      </div>
+    );
+  }
+
+  const eligibleOrders = (orders ?? []).filter(
+    (order) => !workOrderedOrderIds?.has(order.id),
+  );
+
   return (
     <div className="p-8">
       <h1 className="mb-4 text-xl font-bold">新規work_order</h1>
-      <WorkOrderForm orders={orders ?? []} />
+      <WorkOrderForm orders={eligibleOrders} />
     </div>
   );
 }
