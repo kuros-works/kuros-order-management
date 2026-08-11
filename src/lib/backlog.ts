@@ -23,11 +23,21 @@ export type OrderWithRemainingQuantity = {
 
 export async function getOrdersWithRemainingQuantity(
   supabase: SupabaseClient,
+  filters?: { drawingNumber?: string },
 ): Promise<{ data: OrderWithRemainingQuantity[] | null; error: string | null }> {
-  const { data: rawOrders, error: ordersError } = await supabase
+  let ordersQuery = supabase
     .from("orders")
     .select("*, companies(company_name), work_orders(assignee)")
     .order("id", { ascending: true });
+
+  if (filters?.drawingNumber) {
+    ordersQuery = ordersQuery.ilike(
+      "drawing_number",
+      `%${filters.drawingNumber}%`,
+    );
+  }
+
+  const { data: rawOrders, error: ordersError } = await ordersQuery;
 
   if (ordersError) {
     return {

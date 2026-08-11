@@ -11,10 +11,23 @@ const STATUS_COLUMNS = [
   { key: "receipt_sent_status_label", label: "領収書送信状況" },
 ] as const;
 
-export default async function Home() {
+export default async function Home({
+  searchParams,
+}: {
+  searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
+}) {
+  const resolvedSearchParams = await searchParams;
+  const drawingNumberParam = resolvedSearchParams.drawing_number;
+  const drawingNumberInput = Array.isArray(drawingNumberParam)
+    ? drawingNumberParam[0]
+    : drawingNumberParam;
+  const drawingNumber = drawingNumberInput?.trim() ?? "";
+
   const supabase = await createClient();
-  const { data: rawOrders, error } =
-    await getOrdersWithRemainingQuantity(supabase);
+  const { data: rawOrders, error } = await getOrdersWithRemainingQuantity(
+    supabase,
+    drawingNumber ? { drawingNumber } : undefined,
+  );
 
   if (error) {
     return (
@@ -160,6 +173,25 @@ export default async function Home() {
   return (
     <div className="p-8">
       <h1 className="mb-4 text-xl font-bold">orders 一覧（{orders.length}件）</h1>
+      <form action="/" method="GET" className="mb-4 flex items-center gap-2">
+        <label htmlFor="drawing_number" className="text-sm">
+          図番
+        </label>
+        <input
+          type="text"
+          id="drawing_number"
+          name="drawing_number"
+          defaultValue={drawingNumber}
+          placeholder="図番で検索（部分一致）"
+          className="rounded border border-zinc-300 px-2 py-1 text-sm"
+        />
+        <button
+          type="submit"
+          className="rounded border border-zinc-300 bg-zinc-100 px-3 py-1 text-sm"
+        >
+          検索
+        </button>
+      </form>
       {orders.length === 0 ? (
         <p>データがありません</p>
       ) : (
