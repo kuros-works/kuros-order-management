@@ -152,6 +152,7 @@ export default async function Home() {
             col !== "created_at" &&
             col !== "status" &&
             col !== "notes" &&
+            col !== "assignee" &&
             !statusKeys.includes(col),
         )
       : [];
@@ -177,6 +178,9 @@ export default async function Home() {
                 <th className="border border-zinc-300 bg-zinc-100 px-3 py-2 text-left">
                   備考
                 </th>
+                <th className="border border-zinc-300 bg-zinc-100 px-3 py-2 text-left">
+                  担当者
+                </th>
                 {STATUS_COLUMNS.map((col) => (
                   <th
                     key={col.key}
@@ -197,6 +201,9 @@ export default async function Home() {
                   ))}
                   <td className="border border-zinc-300 px-3 py-2">
                     {order.notes ?? ""}
+                  </td>
+                  <td className="border border-zinc-300 px-3 py-2">
+                    {order.assignee ?? ""}
                   </td>
                   {STATUS_COLUMNS.map((col) => (
                     <td

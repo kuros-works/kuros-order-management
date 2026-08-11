@@ -15,6 +15,7 @@ export type OrderWithRemainingQuantity = {
   notes: string | null;
   batch_invoice_id: number | null;
   company_name: string | null;
+  assignee: string | null;
   delivered_quantity: number;
   remaining_quantity: number;
   latest_delivery_date: string | null;
@@ -25,7 +26,7 @@ export async function getOrdersWithRemainingQuantity(
 ): Promise<{ data: OrderWithRemainingQuantity[] | null; error: string | null }> {
   const { data: rawOrders, error: ordersError } = await supabase
     .from("orders")
-    .select("*, companies(company_name)")
+    .select("*, companies(company_name), work_orders(assignee)")
     .order("id", { ascending: true });
 
   if (ordersError) {
@@ -67,13 +68,18 @@ export async function getOrdersWithRemainingQuantity(
   }
 
   const orders = (rawOrders ?? []).map((order) => {
-    const { companies, ...rest } = order as typeof order & {
+    const { companies, work_orders, ...rest } = order as typeof order & {
       companies: { company_name: string } | null;
+      work_orders: { assignee: string }[] | { assignee: string } | null;
     };
     const deliveredQuantity = deliveredByOrderId.get(order.id) ?? 0;
+    const workOrderRecord = Array.isArray(work_orders)
+      ? work_orders[0]
+      : work_orders;
     return {
       ...rest,
       company_name: companies?.company_name ?? null,
+      assignee: workOrderRecord?.assignee ?? null,
       delivered_quantity: deliveredQuantity,
       remaining_quantity: order.quantity - deliveredQuantity,
       latest_delivery_date: latestDeliveryDateByOrderId.get(order.id) ?? null,
