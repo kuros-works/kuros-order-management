@@ -70,5 +70,6 @@ export async function createWorkOrder(
   }
 
   revalidatePath("/");
-  redirect("/");
+  revalidatePath("/work-orders");
+  redirect("/work-orders");
 }
