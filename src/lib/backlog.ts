@@ -23,7 +23,11 @@ export type OrderWithRemainingQuantity = {
 
 export async function getOrdersWithRemainingQuantity(
   supabase: SupabaseClient,
-  filters?: { drawingNumber?: string },
+  filters?: {
+    drawingNumber?: string;
+    orderDateFrom?: string;
+    orderDateTo?: string;
+  },
 ): Promise<{ data: OrderWithRemainingQuantity[] | null; error: string | null }> {
   let ordersQuery = supabase
     .from("orders")
@@ -35,6 +39,14 @@ export async function getOrdersWithRemainingQuantity(
       "drawing_number",
       `%${filters.drawingNumber}%`,
     );
+  }
+
+  if (filters?.orderDateFrom) {
+    ordersQuery = ordersQuery.gte("order_date", filters.orderDateFrom);
+  }
+
+  if (filters?.orderDateTo) {
+    ordersQuery = ordersQuery.lte("order_date", filters.orderDateTo);
   }
 
   const { data: rawOrders, error: ordersError } = await ordersQuery;

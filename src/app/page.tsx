@@ -11,22 +11,38 @@ const STATUS_COLUMNS = [
   { key: "receipt_sent_status_label", label: "領収書送信状況" },
 ] as const;
 
+function getSingleParam(
+  params: { [key: string]: string | string[] | undefined },
+  key: string,
+): string {
+  const value = params[key];
+  const single = Array.isArray(value) ? value[0] : value;
+  return single?.trim() ?? "";
+}
+
 export default async function Home({
   searchParams,
 }: {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
   const resolvedSearchParams = await searchParams;
-  const drawingNumberParam = resolvedSearchParams.drawing_number;
-  const drawingNumberInput = Array.isArray(drawingNumberParam)
-    ? drawingNumberParam[0]
-    : drawingNumberParam;
-  const drawingNumber = drawingNumberInput?.trim() ?? "";
+  const drawingNumber = getSingleParam(resolvedSearchParams, "drawing_number");
+  const orderDateFrom = getSingleParam(resolvedSearchParams, "order_date_from");
+  const orderDateTo = getSingleParam(resolvedSearchParams, "order_date_to");
+
+  const filters: {
+    drawingNumber?: string;
+    orderDateFrom?: string;
+    orderDateTo?: string;
+  } = {};
+  if (drawingNumber) filters.drawingNumber = drawingNumber;
+  if (orderDateFrom) filters.orderDateFrom = orderDateFrom;
+  if (orderDateTo) filters.orderDateTo = orderDateTo;
 
   const supabase = await createClient();
   const { data: rawOrders, error } = await getOrdersWithRemainingQuantity(
     supabase,
-    drawingNumber ? { drawingNumber } : undefined,
+    filters,
   );
 
   if (error) {
@@ -183,6 +199,24 @@ export default async function Home({
           name="drawing_number"
           defaultValue={drawingNumber}
           placeholder="図番で検索（部分一致）"
+          className="rounded border border-zinc-300 px-2 py-1 text-sm"
+        />
+        <label htmlFor="order_date_from" className="text-sm">
+          受注日
+        </label>
+        <input
+          type="date"
+          id="order_date_from"
+          name="order_date_from"
+          defaultValue={orderDateFrom}
+          className="rounded border border-zinc-300 px-2 py-1 text-sm"
+        />
+        <span className="text-sm">〜</span>
+        <input
+          type="date"
+          id="order_date_to"
+          name="order_date_to"
+          defaultValue={orderDateTo}
           className="rounded border border-zinc-300 px-2 py-1 text-sm"
         />
         <button
