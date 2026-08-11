@@ -169,6 +169,7 @@ export default async function Home({
 
     return {
       ...order,
+      total_amount: order.unit_price * order.quantity,
       aggregated_status: aggregatedStatus,
       manufacturing_status: manufacturingStatus,
       delivery_status: deliveryStatus,
@@ -191,6 +192,11 @@ export default async function Home({
             !statusKeys.includes(col),
         )
       : [];
+  const totalAmountIndex = columns.indexOf("total_amount");
+  if (totalAmountIndex !== -1) {
+    columns.splice(totalAmountIndex, 1);
+    columns.splice(columns.indexOf("unit_price") + 1, 0, "total_amount");
+  }
 
   return (
     <div className="p-8">
