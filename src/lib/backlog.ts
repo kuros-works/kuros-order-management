@@ -26,6 +26,7 @@ export async function getOrdersWithRemainingQuantity(
   filters?: {
     drawingNumber?: string;
     subject?: string;
+    companyName?: string;
     orderDateFrom?: string;
     orderDateTo?: string;
   },
@@ -44,6 +45,23 @@ export async function getOrdersWithRemainingQuantity(
 
   if (filters?.subject) {
     ordersQuery = ordersQuery.ilike("subject", `%${filters.subject}%`);
+  }
+
+  if (filters?.companyName) {
+    const { data: matchedCompanies, error: companiesError } = await supabase
+      .from("companies")
+      .select("id")
+      .ilike("company_name", `%${filters.companyName}%`);
+
+    if (companiesError) {
+      return {
+        data: null,
+        error: `companiesの取得に失敗しました: ${companiesError.message}`,
+      };
+    }
+
+    const companyIds = (matchedCompanies ?? []).map((company) => company.id);
+    ordersQuery = ordersQuery.in("company_id", companyIds);
   }
 
   if (filters?.orderDateFrom) {

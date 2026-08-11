@@ -28,17 +28,20 @@ export default async function Home({
   const resolvedSearchParams = await searchParams;
   const drawingNumber = getSingleParam(resolvedSearchParams, "drawing_number");
   const subject = getSingleParam(resolvedSearchParams, "subject");
+  const companyName = getSingleParam(resolvedSearchParams, "company_name");
   const orderDateFrom = getSingleParam(resolvedSearchParams, "order_date_from");
   const orderDateTo = getSingleParam(resolvedSearchParams, "order_date_to");
 
   const filters: {
     drawingNumber?: string;
     subject?: string;
+    companyName?: string;
     orderDateFrom?: string;
     orderDateTo?: string;
   } = {};
   if (drawingNumber) filters.drawingNumber = drawingNumber;
   if (subject) filters.subject = subject;
+  if (companyName) filters.companyName = companyName;
   if (orderDateFrom) filters.orderDateFrom = orderDateFrom;
   if (orderDateTo) filters.orderDateTo = orderDateTo;
 
@@ -213,6 +216,17 @@ export default async function Home({
           name="subject"
           defaultValue={subject}
           placeholder="件名で検索（部分一致）"
+          className="rounded border border-zinc-300 px-2 py-1 text-sm"
+        />
+        <label htmlFor="company_name" className="text-sm">
+          会社名
+        </label>
+        <input
+          type="text"
+          id="company_name"
+          name="company_name"
+          defaultValue={companyName}
+          placeholder="会社名で検索（部分一致）"
           className="rounded border border-zinc-300 px-2 py-1 text-sm"
         />
         <label htmlFor="order_date_from" className="text-sm">
