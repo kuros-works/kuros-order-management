@@ -25,6 +25,7 @@ export async function getOrdersWithRemainingQuantity(
   supabase: SupabaseClient,
   filters?: {
     drawingNumber?: string;
+    subject?: string;
     orderDateFrom?: string;
     orderDateTo?: string;
   },
@@ -39,6 +40,10 @@ export async function getOrdersWithRemainingQuantity(
       "drawing_number",
       `%${filters.drawingNumber}%`,
     );
+  }
+
+  if (filters?.subject) {
+    ordersQuery = ordersQuery.ilike("subject", `%${filters.subject}%`);
   }
 
   if (filters?.orderDateFrom) {
