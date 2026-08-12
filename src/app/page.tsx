@@ -11,6 +11,26 @@ const STATUS_COLUMNS = [
   { key: "receipt_sent_status_label", label: "領収書送信状況" },
 ] as const;
 
+const COLUMN_LABELS: Record<string, string> = {
+  id: "ID",
+  order_code: "受注No",
+  company_id: "会社ID",
+  order_date: "受注日",
+  desired_delivery_date: "希望納期",
+  completion_date: "完了日",
+  subject: "件名",
+  drawing_number: "図番",
+  quantity: "数量",
+  unit: "単位",
+  unit_price: "単価",
+  total_amount: "合計金額",
+  batch_invoice_id: "一括請求ID",
+  company_name: "会社名",
+  delivered_quantity: "納品済数量",
+  remaining_quantity: "残数量",
+  latest_delivery_date: "最終納品日",
+};
+
 function getSingleParam(
   params: { [key: string]: string | string[] | undefined },
   key: string,
@@ -197,6 +217,11 @@ export default async function Home({
     columns.splice(totalAmountIndex, 1);
     columns.splice(columns.indexOf("unit_price") + 1, 0, "total_amount");
   }
+  const companyIdIndex = columns.indexOf("company_id");
+  if (companyIdIndex !== -1) {
+    columns.splice(companyIdIndex, 1);
+    columns.splice(columns.indexOf("company_name") + 1, 0, "company_id");
+  }
 
   return (
     <div className="p-8">
@@ -272,7 +297,7 @@ export default async function Home({
                     key={col}
                     className="border border-zinc-300 bg-zinc-100 px-3 py-2 text-left"
                   >
-                    {col}
+                    {COLUMN_LABELS[col] ?? col}
                   </th>
                 ))}
                 <th className="border border-zinc-300 bg-zinc-100 px-3 py-2 text-left">
