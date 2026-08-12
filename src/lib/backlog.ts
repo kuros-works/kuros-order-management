@@ -21,6 +21,20 @@ export type OrderWithRemainingQuantity = {
   latest_delivery_date: string | null;
 };
 
+export const ALLOWED_SORT_COLUMNS = [
+  "id",
+  "order_date",
+  "desired_delivery_date",
+  "completion_date",
+  "subject",
+  "drawing_number",
+  "quantity",
+  "unit_price",
+  "total_amount",
+  "company_name",
+  "order_code",
+] as const;
+
 export async function getOrdersWithRemainingQuantity(
   supabase: SupabaseClient,
   filters?: {
@@ -29,12 +43,29 @@ export async function getOrdersWithRemainingQuantity(
     companyName?: string;
     orderDateFrom?: string;
     orderDateTo?: string;
+    sortBy?: string;
+    sortOrder?: "asc" | "desc";
   },
 ): Promise<{ data: OrderWithRemainingQuantity[] | null; error: string | null }> {
   let ordersQuery = supabase
     .from("orders")
-    .select("*, companies(company_name), work_orders(assignee)")
-    .order("id", { ascending: true });
+    .select("*, companies(company_name), work_orders(assignee)");
+
+  if (
+    filters?.sortBy &&
+    (ALLOWED_SORT_COLUMNS as readonly string[]).includes(filters.sortBy)
+  ) {
+    const ascending = filters.sortOrder !== "desc";
+    ordersQuery =
+      filters.sortBy === "company_name"
+        ? ordersQuery.order("company_name", {
+            referencedTable: "companies",
+            ascending,
+          })
+        : ordersQuery.order(filters.sortBy, { ascending });
+  } else {
+    ordersQuery = ordersQuery.order("id", { ascending: true });
+  }
 
   if (filters?.drawingNumber) {
     ordersQuery = ordersQuery.ilike(

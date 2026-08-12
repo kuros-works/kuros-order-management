@@ -1,5 +1,9 @@
 import { createClient } from "@/lib/supabase-server";
-import { getAggregatedStatus, getOrdersWithRemainingQuantity } from "@/lib/backlog";
+import {
+  ALLOWED_SORT_COLUMNS,
+  getAggregatedStatus,
+  getOrdersWithRemainingQuantity,
+} from "@/lib/backlog";
 
 const STATUS_COLUMNS = [
   { key: "aggregated_status", label: "進捗状況" },
@@ -54,6 +58,8 @@ export default async function Home({
   const companyName = getSingleParam(resolvedSearchParams, "company_name");
   const orderDateFrom = getSingleParam(resolvedSearchParams, "order_date_from");
   const orderDateTo = getSingleParam(resolvedSearchParams, "order_date_to");
+  const sortBy = getSingleParam(resolvedSearchParams, "sort_by");
+  const sortOrder = getSingleParam(resolvedSearchParams, "sort_order");
 
   const filters: {
     drawingNumber?: string;
@@ -61,12 +67,16 @@ export default async function Home({
     companyName?: string;
     orderDateFrom?: string;
     orderDateTo?: string;
+    sortBy?: string;
+    sortOrder?: "asc" | "desc";
   } = {};
   if (drawingNumber) filters.drawingNumber = drawingNumber;
   if (subject) filters.subject = subject;
   if (companyName) filters.companyName = companyName;
   if (orderDateFrom) filters.orderDateFrom = orderDateFrom;
   if (orderDateTo) filters.orderDateTo = orderDateTo;
+  if (sortBy) filters.sortBy = sortBy;
+  if (sortOrder === "asc" || sortOrder === "desc") filters.sortOrder = sortOrder;
 
   const supabase = await createClient();
   const { data: rawOrders, error } = await getOrdersWithRemainingQuantity(
@@ -226,6 +236,23 @@ export default async function Home({
     columns.splice(columns.indexOf("company_name") + 1, 0, "company_id");
   }
 
+  const sortableColumns = ALLOWED_SORT_COLUMNS as readonly string[];
+  const currentSortOrder = sortOrder === "desc" ? "desc" : "asc";
+
+  function buildSortHref(col: string): string {
+    const params = new URLSearchParams();
+    if (drawingNumber) params.set("drawing_number", drawingNumber);
+    if (subject) params.set("subject", subject);
+    if (companyName) params.set("company_name", companyName);
+    if (orderDateFrom) params.set("order_date_from", orderDateFrom);
+    if (orderDateTo) params.set("order_date_to", orderDateTo);
+    const nextSortOrder =
+      sortBy === col && currentSortOrder === "asc" ? "desc" : "asc";
+    params.set("sort_by", col);
+    params.set("sort_order", nextSortOrder);
+    return `/?${params.toString()}`;
+  }
+
   return (
     <div className="p-8">
       <h1 className="mb-4 text-xl font-bold">orders 一覧（{orders.length}件）</h1>
@@ -295,14 +322,38 @@ export default async function Home({
           <table className="min-w-full border-collapse border border-zinc-300 text-sm">
             <thead>
               <tr>
-                {columns.map((col) => (
-                  <th
-                    key={col}
-                    className="border border-zinc-300 bg-zinc-100 px-3 py-2 text-left"
-                  >
-                    {COLUMN_LABELS[col] ?? col}
-                  </th>
-                ))}
+                {columns.map((col) => {
+                  const label = COLUMN_LABELS[col] ?? col;
+                  const isSortable = sortableColumns.includes(col);
+                  const isCurrentSort = isSortable && sortBy === col;
+
+                  if (!isSortable) {
+                    return (
+                      <th
+                        key={col}
+                        className="border border-zinc-300 bg-zinc-100 px-3 py-2 text-left"
+                      >
+                        {label}
+                      </th>
+                    );
+                  }
+
+                  return (
+                    <th
+                      key={col}
+                      className="border border-zinc-300 bg-zinc-100 px-3 py-2 text-left"
+                    >
+                      <a href={buildSortHref(col)} className="hover:underline">
+                        {label}
+                        {isCurrentSort
+                          ? currentSortOrder === "asc"
+                            ? " ▲"
+                            : " ▼"
+                          : ""}
+                      </a>
+                    </th>
+                  );
+                })}
                 <th className="border border-zinc-300 bg-zinc-100 px-3 py-2 text-left">
                   備考
                 </th>
