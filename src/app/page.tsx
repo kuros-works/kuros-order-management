@@ -29,6 +29,9 @@ const COLUMN_LABELS: Record<string, string> = {
   delivered_quantity: "納品済数量",
   remaining_quantity: "残数量",
   latest_delivery_date: "最終納品日",
+  invoice_sent_date: "請求書送信日",
+  payment_date: "入金日",
+  receipt_sent_date: "領収書送信日",
 };
 
 function getSingleParam(
