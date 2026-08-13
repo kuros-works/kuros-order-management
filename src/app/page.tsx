@@ -318,7 +318,7 @@ export default async function Home({
       {orders.length === 0 ? (
         <p>データがありません</p>
       ) : (
-        <div className="overflow-x-auto">
+        <div className="max-h-[70vh] overflow-auto">
           <table className="min-w-full border-collapse border border-zinc-300 text-sm">
             <thead>
               <tr>
