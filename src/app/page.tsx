@@ -331,7 +331,7 @@ export default async function Home({
                     return (
                       <th
                         key={col}
-                        className="border border-zinc-300 bg-zinc-100 px-3 py-2 text-left"
+                        className="sticky top-0 border border-zinc-300 bg-zinc-100 px-3 py-2 text-left"
                       >
                         {label}
                       </th>
@@ -341,7 +341,7 @@ export default async function Home({
                   return (
                     <th
                       key={col}
-                      className="border border-zinc-300 bg-zinc-100 px-3 py-2 text-left"
+                      className="sticky top-0 border border-zinc-300 bg-zinc-100 px-3 py-2 text-left"
                     >
                       <a href={buildSortHref(col)} className="hover:underline">
                         {label}
@@ -354,16 +354,16 @@ export default async function Home({
                     </th>
                   );
                 })}
-                <th className="border border-zinc-300 bg-zinc-100 px-3 py-2 text-left">
+                <th className="sticky top-0 border border-zinc-300 bg-zinc-100 px-3 py-2 text-left">
                   備考
                 </th>
-                <th className="border border-zinc-300 bg-zinc-100 px-3 py-2 text-left">
+                <th className="sticky top-0 border border-zinc-300 bg-zinc-100 px-3 py-2 text-left">
                   担当者
                 </th>
                 {STATUS_COLUMNS.map((col) => (
                   <th
                     key={col.key}
-                    className="border border-zinc-300 bg-zinc-100 px-3 py-2 text-left"
+                    className="sticky top-0 border border-zinc-300 bg-zinc-100 px-3 py-2 text-left"
                   >
                     {col.label}
                   </th>
