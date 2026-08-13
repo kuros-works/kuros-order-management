@@ -76,24 +76,24 @@ export default async function WorkOrders() {
   return (
     <div className="p-8">
       <h1 className="mb-4 text-xl font-bold">
-        work_orders 一覧（{workOrders?.length ?? 0}件）
+        製造指示書一覧（{workOrders?.length ?? 0}件）
       </h1>
       {!workOrders || workOrders.length === 0 ? (
         <p>データがありません</p>
       ) : (
-        <div className="overflow-x-auto">
+        <div className="max-h-[70vh] overflow-auto">
           <table className="min-w-full border-collapse border border-zinc-300 text-sm">
             <thead>
               <tr>
                 {columns.map((col) => (
                   <th
                     key={col}
-                    className="border border-zinc-300 bg-zinc-100 px-3 py-2 text-left"
+                    className="sticky top-0 border border-zinc-300 bg-zinc-100 px-3 py-2 text-left"
                   >
                     {COLUMN_LABELS[col] ?? col}
                   </th>
                 ))}
-                <th className="border border-zinc-300 bg-zinc-100 px-3 py-2 text-left">
+                <th className="sticky top-0 border border-zinc-300 bg-zinc-100 px-3 py-2 text-left">
                   備考
                 </th>
               </tr>

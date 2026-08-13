@@ -255,7 +255,7 @@ export default async function Home({
 
   return (
     <div className="p-8">
-      <h1 className="mb-4 text-xl font-bold">orders 一覧（{orders.length}件）</h1>
+      <h1 className="mb-4 text-xl font-bold">受注一覧（{orders.length}件）</h1>
       <form action="/" method="GET" className="mb-4 flex items-center gap-2">
         <label htmlFor="drawing_number" className="text-sm">
           図番
