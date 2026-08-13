@@ -41,7 +41,7 @@ export default async function NewWorkOrderPage() {
 
   return (
     <div className="p-8">
-      <h1 className="mb-4 text-xl font-bold">新規work_order</h1>
+      <h1 className="mb-4 text-xl font-bold">新規製造指示書</h1>
       <WorkOrderForm orders={eligibleOrders} />
     </div>
   );

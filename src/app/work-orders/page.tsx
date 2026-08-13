@@ -2,6 +2,19 @@ import { createClient } from "@/lib/supabase-server";
 import { NotesInlineEditor } from "@/components/NotesInlineEditor";
 import { updateOrderNotes } from "./actions";
 
+const COLUMN_LABELS: Record<string, string> = {
+  id: "ID",
+  work_order_code: "製造指示書No",
+  assignee: "担当者",
+  issued_date: "発行日",
+  order_code: "受注No",
+  subject: "件名",
+  drawing_number: "図番",
+  company_name: "会社名",
+  quantity: "数量",
+  desired_delivery_date: "希望納期",
+};
+
 export default async function WorkOrders() {
   const supabase = await createClient();
   const { data: rawWorkOrders, error } = await supabase
@@ -77,7 +90,7 @@ export default async function WorkOrders() {
                     key={col}
                     className="border border-zinc-300 bg-zinc-100 px-3 py-2 text-left"
                   >
-                    {col}
+                    {COLUMN_LABELS[col] ?? col}
                   </th>
                 ))}
                 <th className="border border-zinc-300 bg-zinc-100 px-3 py-2 text-left">
