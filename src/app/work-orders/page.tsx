@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { createClient } from "@/lib/supabase-server";
 import { NotesInlineEditor } from "@/components/NotesInlineEditor";
 import { updateOrderNotes } from "./actions";
@@ -188,6 +189,12 @@ export default async function WorkOrders({
         >
           検索
         </button>
+        <Link
+          href="/work-orders"
+          className="rounded border border-zinc-300 px-3 py-1 text-sm hover:bg-zinc-100"
+        >
+          検索解除
+        </Link>
       </form>
       {!workOrders || workOrders.length === 0 ? (
         <p>データがありません</p>

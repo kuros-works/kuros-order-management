@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { createClient } from "@/lib/supabase-server";
 import {
   ALLOWED_SORT_COLUMNS,
@@ -314,6 +315,12 @@ export default async function Home({
         >
           検索
         </button>
+        <Link
+          href="/"
+          className="rounded border border-zinc-300 px-3 py-1 text-sm hover:bg-zinc-100"
+        >
+          検索解除
+        </Link>
       </form>
       {orders.length === 0 ? (
         <p>データがありません</p>
