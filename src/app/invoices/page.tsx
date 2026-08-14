@@ -9,6 +9,7 @@ const COLUMN_LABELS: Record<string, string> = {
   issued_date: "請求日",
   payment_status: "入金状況",
   sent_flag: "送付済み",
+  sent_date: "一括請求作成日",
   order_code: "受注No",
   subject: "件名",
   drawing_number: "図番",
