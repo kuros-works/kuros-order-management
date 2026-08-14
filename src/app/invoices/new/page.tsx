@@ -49,6 +49,7 @@ export default async function NewInvoicePage() {
       company_name: order.company_name,
       unit_price: order.unit_price,
       quantity: order.quantity,
+      notes: order.notes,
     }));
 
   return (

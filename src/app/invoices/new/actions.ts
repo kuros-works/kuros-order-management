@@ -25,6 +25,8 @@ export async function createInvoice(
     return { error: "請求日を入力してください" };
   }
 
+  const notes = String(formData.get("notes") ?? "").trim();
+
   const { data: backlog, error: backlogError } =
     await getOrdersWithRemainingQuantity(supabase);
 
@@ -84,6 +86,7 @@ export async function createInvoice(
       company_id: order.company_id,
       invoice_code: invoiceCode,
       issued_date: issuedDate,
+      notes: notes || null,
     })
     .select("id")
     .single();

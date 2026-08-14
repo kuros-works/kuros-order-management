@@ -12,6 +12,7 @@ type Order = {
   company_name: string | null;
   unit_price: number;
   quantity: number;
+  notes: string | null;
 };
 
 const initialState: CreateInvoiceState = { error: null };
@@ -28,10 +29,17 @@ export function InvoiceForm({ orders }: { orders: Order[] }) {
   const [selectedOrderId, setSelectedOrderId] = useState(
     orders[0] ? String(orders[0].id) : "",
   );
+  const [notes, setNotes] = useState(orders[0]?.notes ?? "");
 
   const selectedOrder = orders.find(
     (order) => String(order.id) === selectedOrderId,
   );
+
+  const handleOrderChange = (orderId: string) => {
+    setSelectedOrderId(orderId);
+    const order = orders.find((o) => String(o.id) === orderId);
+    setNotes(order?.notes ?? "");
+  };
 
   const amount = selectedOrder
     ? selectedOrder.unit_price * selectedOrder.quantity
@@ -55,7 +63,7 @@ export function InvoiceForm({ orders }: { orders: Order[] }) {
           name="order_id"
           required
           value={selectedOrderId}
-          onChange={(e) => setSelectedOrderId(e.target.value)}
+          onChange={(e) => handleOrderChange(e.target.value)}
           className="w-full rounded border border-zinc-300 px-3 py-2 text-sm"
         >
           {orders.map((order) => (
@@ -116,6 +124,19 @@ export function InvoiceForm({ orders }: { orders: Order[] }) {
           required
           defaultValue={todayJST()}
           className="w-full rounded border border-zinc-300 px-3 py-2 text-sm"
+        />
+      </div>
+      <div>
+        <label htmlFor="notes" className="mb-1 block text-sm font-bold">
+          備考
+        </label>
+        <textarea
+          id="notes"
+          name="notes"
+          rows={2}
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
+          className="w-full rounded border border-zinc-300 px-2 py-1 text-xs"
         />
       </div>
       <button
