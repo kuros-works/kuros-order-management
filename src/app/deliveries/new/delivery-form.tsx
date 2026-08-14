@@ -121,6 +121,17 @@ export function DeliveryForm({ orders }: { orders: Order[] }) {
           今回の金額: {amount.toLocaleString("ja-JP")}円
         </p>
       </div>
+      <div>
+        <label htmlFor="notes" className="mb-1 block text-sm font-bold">
+          備考
+        </label>
+        <textarea
+          id="notes"
+          name="notes"
+          rows={2}
+          className="w-full rounded border border-zinc-300 px-2 py-1 text-xs"
+        />
+      </div>
       <button
         type="submit"
         disabled={pending}
