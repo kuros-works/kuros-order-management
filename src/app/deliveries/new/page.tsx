@@ -5,7 +5,9 @@ export default async function NewDeliveryPage() {
   const supabase = await createClient();
   const { data: rawOrders, error } = await supabase
     .from("orders")
-    .select("id, order_code, subject, unit_price, companies(company_name)")
+    .select(
+      "id, order_code, subject, unit_price, notes, companies(company_name)",
+    )
     .order("id", { ascending: true });
 
   if (error) {

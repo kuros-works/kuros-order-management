@@ -9,6 +9,7 @@ type Order = {
   order_code: string;
   subject: string;
   unit_price: number;
+  notes: string | null;
   company_name: string | null;
 };
 
@@ -27,10 +28,17 @@ export function DeliveryForm({ orders }: { orders: Order[] }) {
     orders[0] ? String(orders[0].id) : "",
   );
   const [deliveredQuantity, setDeliveredQuantity] = useState("");
+  const [notes, setNotes] = useState(orders[0]?.notes ?? "");
 
   const selectedOrder = orders.find(
     (order) => String(order.id) === selectedOrderId,
   );
+
+  const handleOrderChange = (orderId: string) => {
+    setSelectedOrderId(orderId);
+    const order = orders.find((o) => String(o.id) === orderId);
+    setNotes(order?.notes ?? "");
+  };
 
   const amount =
     selectedOrder && deliveredQuantity
@@ -51,7 +59,7 @@ export function DeliveryForm({ orders }: { orders: Order[] }) {
           name="order_id"
           required
           value={selectedOrderId}
-          onChange={(e) => setSelectedOrderId(e.target.value)}
+          onChange={(e) => handleOrderChange(e.target.value)}
           className="w-full rounded border border-zinc-300 px-3 py-2 text-sm"
         >
           {orders.map((order) => (
@@ -129,6 +137,8 @@ export function DeliveryForm({ orders }: { orders: Order[] }) {
           id="notes"
           name="notes"
           rows={2}
+          value={notes}
+          onChange={(e) => setNotes(e.target.value)}
           className="w-full rounded border border-zinc-300 px-2 py-1 text-xs"
         />
       </div>
