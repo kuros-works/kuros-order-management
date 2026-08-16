@@ -58,31 +58,19 @@ export default async function Receipts({
   const sortBy = getSingleParam(resolvedSearchParams, "sort_by");
   const sortOrder = getSingleParam(resolvedSearchParams, "sort_order");
 
-  const hasTextFilter = Boolean(subject || drawingNumber || companyName);
-
   const supabase = await createClient();
-  let receiptQuery = supabase
-    .from("receipts")
-    .select(
-      `*, invoices${hasTextFilter ? "!inner" : ""}(invoice_code, issued_date, orders${hasTextFilter ? "!inner" : ""}(id, order_code, subject, drawing_number, unit_price, quantity, notes, companies${hasTextFilter ? "!inner" : ""}(company_name)))`,
-    );
+  let receiptQuery = supabase.from("receipts_with_order_info").select("*");
 
   if (subject) {
-    receiptQuery = receiptQuery.ilike("invoices.orders.subject", `%${subject}%`);
+    receiptQuery = receiptQuery.ilike("subject", `%${subject}%`);
   }
 
   if (drawingNumber) {
-    receiptQuery = receiptQuery.ilike(
-      "invoices.orders.drawing_number",
-      `%${drawingNumber}%`,
-    );
+    receiptQuery = receiptQuery.ilike("drawing_number", `%${drawingNumber}%`);
   }
 
   if (companyName) {
-    receiptQuery = receiptQuery.ilike(
-      "invoices.orders.companies.company_name",
-      `%${companyName}%`,
-    );
+    receiptQuery = receiptQuery.ilike("company_name", `%${companyName}%`);
   }
 
   if (
@@ -90,24 +78,7 @@ export default async function Receipts({
     (ALLOWED_SORT_COLUMNS as readonly string[]).includes(sortBy)
   ) {
     const ascending = sortOrder !== "desc";
-    if ((INVOICES_TABLE_SORT_COLUMNS as readonly string[]).includes(sortBy)) {
-      receiptQuery = receiptQuery.order(sortBy, {
-        referencedTable: "invoices",
-        ascending,
-      });
-    } else if ((ORDERS_TABLE_SORT_COLUMNS as readonly string[]).includes(sortBy)) {
-      receiptQuery = receiptQuery.order(sortBy, {
-        referencedTable: "invoices.orders",
-        ascending,
-      });
-    } else if (sortBy === "company_name") {
-      receiptQuery = receiptQuery.order("company_name", {
-        referencedTable: "invoices.orders.companies",
-        ascending,
-      });
-    } else {
-      receiptQuery = receiptQuery.order(sortBy, { ascending });
-    }
+    receiptQuery = receiptQuery.order(sortBy, { ascending });
   } else {
     receiptQuery = receiptQuery.order("id", { ascending: true });
   }
@@ -127,48 +98,60 @@ export default async function Receipts({
     );
   }
 
+  // receipts_with_order_info ビューは orders.id / orders.notes を持たないため、
+  // 備考インライン編集（orders.notes書き込み）に必要な分だけ orders から補完取得する。
+  const orderCodes = Array.from(
+    new Set(
+      (rawReceipts ?? [])
+        .map((receipt) => receipt.order_code)
+        .filter((code): code is string => Boolean(code)),
+    ),
+  );
+
+  const orderNotesByCode = new Map<
+    string,
+    { id: number; notes: string | null }
+  >();
+
+  if (orderCodes.length > 0) {
+    const { data: orderRows, error: orderError } = await supabase
+      .from("orders")
+      .select("id, order_code, notes")
+      .in("order_code", orderCodes);
+
+    if (orderError) {
+      return (
+        <div className="p-8">
+          <h1 className="text-xl font-bold text-red-600">
+            ordersの取得に失敗しました
+          </h1>
+          <pre className="mt-4 whitespace-pre-wrap text-sm text-red-500">
+            {orderError.message}
+          </pre>
+        </div>
+      );
+    }
+
+    for (const order of orderRows ?? []) {
+      orderNotesByCode.set(order.order_code, {
+        id: order.id,
+        notes: order.notes,
+      });
+    }
+  }
+
   const receipts = rawReceipts?.map((receipt) => {
-    const { invoice_id, invoices, received_date, received_amount, ...rest } =
-      receipt as typeof receipt & {
-        invoice_id: unknown;
-        invoices: {
-          invoice_code: string;
-          issued_date: string;
-          orders: {
-            id: number;
-            order_code: string;
-            subject: string;
-            drawing_number: string | null;
-            unit_price: number | null;
-            quantity: number | null;
-            notes: string | null;
-            companies: { company_name: string } | null;
-          } | null;
-        } | null;
-      };
-    const orderInfo = invoices?.orders ?? null;
-    const suggestedAmount =
-      orderInfo?.unit_price !== null &&
-      orderInfo?.unit_price !== undefined &&
-      orderInfo?.quantity !== null &&
-      orderInfo?.quantity !== undefined
-        ? orderInfo.unit_price * orderInfo.quantity
-        : null;
+    const { total_amount, ...rest } = receipt as typeof receipt & {
+      total_amount: number | null;
+    };
+    const orderInfo = rest.order_code
+      ? orderNotesByCode.get(rest.order_code)
+      : undefined;
     return {
       ...rest,
-      received_date,
-      received_amount,
-      invoice_code: invoices?.invoice_code ?? invoice_id,
-      issued_date: invoices?.issued_date ?? null,
-      order_id: orderInfo!.id,
-      order_code: orderInfo?.order_code ?? null,
-      subject: orderInfo?.subject ?? null,
-      drawing_number: orderInfo?.drawing_number ?? null,
-      company_name: orderInfo?.companies?.company_name ?? null,
-      unit_price: orderInfo?.unit_price ?? null,
-      quantity: orderInfo?.quantity ?? null,
-      amount: suggestedAmount,
-      suggested_amount: suggestedAmount,
+      amount: total_amount,
+      suggested_amount: total_amount,
+      order_id: orderInfo?.id ?? null,
       order_notes: orderInfo?.notes ?? null,
     };
   });
@@ -178,6 +161,7 @@ export default async function Receipts({
       ? Object.keys(receipts[0]).filter(
           (col) =>
             col !== "created_at" &&
+            col !== "invoice_id" &&
             col !== "sent_flag" &&
             col !== "sent_date" &&
             col !== "received_date" &&

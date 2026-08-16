@@ -47,22 +47,14 @@ export async function getOrdersWithRemainingQuantity(
     sortOrder?: "asc" | "desc";
   },
 ): Promise<{ data: OrderWithRemainingQuantity[] | null; error: string | null }> {
-  let ordersQuery = supabase
-    .from("orders")
-    .select("*, companies(company_name), work_orders(assignee)");
+  let ordersQuery = supabase.from("orders_with_company_info").select("*");
 
   if (
     filters?.sortBy &&
     (ALLOWED_SORT_COLUMNS as readonly string[]).includes(filters.sortBy)
   ) {
     const ascending = filters.sortOrder !== "desc";
-    ordersQuery =
-      filters.sortBy === "company_name"
-        ? ordersQuery.order("company_name", {
-            referencedTable: "companies",
-            ascending,
-          })
-        : ordersQuery.order(filters.sortBy, { ascending });
+    ordersQuery = ordersQuery.order(filters.sortBy, { ascending });
   } else {
     ordersQuery = ordersQuery.order("id", { ascending: true });
   }
@@ -79,20 +71,7 @@ export async function getOrdersWithRemainingQuantity(
   }
 
   if (filters?.companyName) {
-    const { data: matchedCompanies, error: companiesError } = await supabase
-      .from("companies")
-      .select("id")
-      .ilike("company_name", `%${filters.companyName}%`);
-
-    if (companiesError) {
-      return {
-        data: null,
-        error: `companiesの取得に失敗しました: ${companiesError.message}`,
-      };
-    }
-
-    const companyIds = (matchedCompanies ?? []).map((company) => company.id);
-    ordersQuery = ordersQuery.in("company_id", companyIds);
+    ordersQuery = ordersQuery.ilike("company_name", `%${filters.companyName}%`);
   }
 
   if (filters?.orderDateFrom) {
@@ -143,19 +122,33 @@ export async function getOrdersWithRemainingQuantity(
     }
   }
 
-  const orders = (rawOrders ?? []).map((order) => {
-    const { companies, work_orders, ...rest } = order as typeof order & {
-      companies: { company_name: string } | null;
-      work_orders: { assignee: string }[] | { assignee: string } | null;
-    };
-    const deliveredQuantity = deliveredByOrderId.get(order.id) ?? 0;
-    const workOrderRecord = Array.isArray(work_orders)
-      ? work_orders[0]
-      : work_orders;
+  // orders_with_company_info ビューは orders/companies のみのフラット結合で、
+  // work_orders（1受注に複数件ありうる）は含まれないため、担当者は別途取得する。
+  const { data: workOrdersForAssignee, error: workOrdersForAssigneeError } =
+    await supabase
+      .from("work_orders")
+      .select("order_id, assignee")
+      .order("id", { ascending: true });
+
+  if (workOrdersForAssigneeError) {
     return {
-      ...rest,
-      company_name: companies?.company_name ?? null,
-      assignee: workOrderRecord?.assignee ?? null,
+      data: null,
+      error: `work_ordersの取得に失敗しました: ${workOrdersForAssigneeError.message}`,
+    };
+  }
+
+  const assigneeByOrderId = new Map<number, string>();
+  for (const workOrder of workOrdersForAssignee ?? []) {
+    if (!assigneeByOrderId.has(workOrder.order_id)) {
+      assigneeByOrderId.set(workOrder.order_id, workOrder.assignee);
+    }
+  }
+
+  const orders = (rawOrders ?? []).map((order) => {
+    const deliveredQuantity = deliveredByOrderId.get(order.id) ?? 0;
+    return {
+      ...order,
+      assignee: assigneeByOrderId.get(order.id) ?? null,
       delivered_quantity: deliveredQuantity,
       remaining_quantity: order.quantity - deliveredQuantity,
       latest_delivery_date: latestDeliveryDateByOrderId.get(order.id) ?? null,

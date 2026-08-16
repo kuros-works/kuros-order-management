@@ -25,12 +25,6 @@ const WORK_ORDER_SORT_COLUMNS = [
   "drawing_number",
 ] as const;
 
-const ORDERS_TABLE_SORT_COLUMNS = [
-  "desired_delivery_date",
-  "subject",
-  "drawing_number",
-] as const;
-
 function getSingleParam(
   params: { [key: string]: string | string[] | undefined },
   key: string,
@@ -51,22 +45,18 @@ export default async function WorkOrders({
   const sortBy = getSingleParam(resolvedSearchParams, "sort_by");
   const sortOrder = getSingleParam(resolvedSearchParams, "sort_order");
 
-  const hasTextFilter = Boolean(subject || drawingNumber);
-
   const supabase = await createClient();
   let workOrdersQuery = supabase
-    .from("work_orders")
-    .select(
-      `*, orders${hasTextFilter ? "!inner" : ""}(order_code, subject, drawing_number, quantity, desired_delivery_date, notes, companies(company_name))`,
-    );
+    .from("work_orders_with_order_info")
+    .select("*");
 
   if (subject) {
-    workOrdersQuery = workOrdersQuery.ilike("orders.subject", `%${subject}%`);
+    workOrdersQuery = workOrdersQuery.ilike("subject", `%${subject}%`);
   }
 
   if (drawingNumber) {
     workOrdersQuery = workOrdersQuery.ilike(
-      "orders.drawing_number",
+      "drawing_number",
       `%${drawingNumber}%`,
     );
   }
@@ -76,11 +66,7 @@ export default async function WorkOrders({
     (WORK_ORDER_SORT_COLUMNS as readonly string[]).includes(sortBy)
   ) {
     const ascending = sortOrder !== "desc";
-    workOrdersQuery = (
-      ORDERS_TABLE_SORT_COLUMNS as readonly string[]
-    ).includes(sortBy)
-      ? workOrdersQuery.order(sortBy, { referencedTable: "orders", ascending })
-      : workOrdersQuery.order(sortBy, { ascending });
+    workOrdersQuery = workOrdersQuery.order(sortBy, { ascending });
   } else {
     workOrdersQuery = workOrdersQuery.order("id", { ascending: true });
   }
@@ -100,31 +86,7 @@ export default async function WorkOrders({
     );
   }
 
-  const workOrders = rawWorkOrders?.map((workOrder) => {
-    const { order_id, orders, ...rest } = workOrder as typeof workOrder & {
-      order_id: number;
-      orders: {
-        order_code: string;
-        subject: string;
-        drawing_number: string;
-        quantity: number;
-        desired_delivery_date: string;
-        notes: string | null;
-        companies: { company_name: string } | null;
-      } | null;
-    };
-    return {
-      ...rest,
-      order_id,
-      order_code: orders?.order_code ?? order_id,
-      subject: orders?.subject ?? null,
-      drawing_number: orders?.drawing_number ?? null,
-      company_name: orders?.companies?.company_name ?? null,
-      quantity: orders?.quantity ?? null,
-      desired_delivery_date: orders?.desired_delivery_date ?? null,
-      order_notes: orders?.notes ?? null,
-    };
-  });
+  const workOrders = rawWorkOrders;
 
   const columns =
     workOrders && workOrders.length > 0

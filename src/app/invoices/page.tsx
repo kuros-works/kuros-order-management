@@ -54,28 +54,19 @@ export default async function Invoices({
   const sortBy = getSingleParam(resolvedSearchParams, "sort_by");
   const sortOrder = getSingleParam(resolvedSearchParams, "sort_order");
 
-  const hasTextFilter = Boolean(subject || drawingNumber || companyName);
-
   const supabase = await createClient();
-  let invoiceQuery = supabase
-    .from("invoices")
-    .select(
-      `*, orders${hasTextFilter ? "!inner" : ""}(order_code, subject, drawing_number, unit_price, quantity, notes), companies${hasTextFilter ? "!inner" : ""}(company_name)`,
-    );
+  let invoiceQuery = supabase.from("invoices_with_order_info").select("*");
 
   if (subject) {
-    invoiceQuery = invoiceQuery.ilike("orders.subject", `%${subject}%`);
+    invoiceQuery = invoiceQuery.ilike("subject", `%${subject}%`);
   }
 
   if (drawingNumber) {
-    invoiceQuery = invoiceQuery.ilike(
-      "orders.drawing_number",
-      `%${drawingNumber}%`,
-    );
+    invoiceQuery = invoiceQuery.ilike("drawing_number", `%${drawingNumber}%`);
   }
 
   if (companyName) {
-    invoiceQuery = invoiceQuery.ilike("companies.company_name", `%${companyName}%`);
+    invoiceQuery = invoiceQuery.ilike("company_name", `%${companyName}%`);
   }
 
   if (
@@ -83,19 +74,7 @@ export default async function Invoices({
     (ALLOWED_SORT_COLUMNS as readonly string[]).includes(sortBy)
   ) {
     const ascending = sortOrder !== "desc";
-    if ((ORDERS_TABLE_SORT_COLUMNS as readonly string[]).includes(sortBy)) {
-      invoiceQuery = invoiceQuery.order(sortBy, {
-        referencedTable: "orders",
-        ascending,
-      });
-    } else if (sortBy === "company_name") {
-      invoiceQuery = invoiceQuery.order("company_name", {
-        referencedTable: "companies",
-        ascending,
-      });
-    } else {
-      invoiceQuery = invoiceQuery.order(sortBy, { ascending });
-    }
+    invoiceQuery = invoiceQuery.order(sortBy, { ascending });
   } else {
     invoiceQuery = invoiceQuery.order("id", { ascending: true });
   }
@@ -116,36 +95,12 @@ export default async function Invoices({
   }
 
   const invoices = rawInvoices?.map((invoice) => {
-    const { order_id, company_id, orders, companies, ...rest } =
-      invoice as typeof invoice & {
-        order_id: number;
-        company_id: unknown;
-        orders: {
-          order_code: string;
-          subject: string;
-          drawing_number: string | null;
-          unit_price: number | null;
-          quantity: number | null;
-          notes: string | null;
-        } | null;
-        companies: { company_name: string } | null;
-      };
-    const unit_price = orders?.unit_price ?? null;
-    const quantity = orders?.quantity ?? null;
+    const { total_amount, ...rest } = invoice as typeof invoice & {
+      total_amount: number | null;
+    };
     return {
       ...rest,
-      order_id,
-      order_code: orders?.order_code ?? order_id,
-      subject: orders?.subject ?? null,
-      drawing_number: orders?.drawing_number ?? null,
-      company_name: companies?.company_name ?? company_id,
-      unit_price,
-      quantity,
-      amount:
-        unit_price !== null && quantity !== null
-          ? unit_price * quantity
-          : null,
-      order_notes: orders?.notes ?? null,
+      amount: total_amount,
     };
   });
 
@@ -156,7 +111,8 @@ export default async function Invoices({
             col !== "created_at" &&
             col !== "notes" &&
             col !== "order_id" &&
-            col !== "order_notes",
+            col !== "order_notes" &&
+            col !== "company_id",
         )
       : [];
 

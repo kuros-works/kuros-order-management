@@ -50,31 +50,21 @@ export default async function Deliveries({
   const sortBy = getSingleParam(resolvedSearchParams, "sort_by");
   const sortOrder = getSingleParam(resolvedSearchParams, "sort_order");
 
-  const hasTextFilter = Boolean(subject || drawingNumber || companyName);
-
   const supabase = await createClient();
   let deliveryQuery = supabase
-    .from("delivery_note_items")
-    .select(
-      `*, orders${hasTextFilter ? "!inner" : ""}(order_code, subject, drawing_number, unit_price, notes, companies${hasTextFilter ? "!inner" : ""}(company_name))`,
-    );
+    .from("deliveries_with_order_info")
+    .select("*");
 
   if (subject) {
-    deliveryQuery = deliveryQuery.ilike("orders.subject", `%${subject}%`);
+    deliveryQuery = deliveryQuery.ilike("subject", `%${subject}%`);
   }
 
   if (drawingNumber) {
-    deliveryQuery = deliveryQuery.ilike(
-      "orders.drawing_number",
-      `%${drawingNumber}%`,
-    );
+    deliveryQuery = deliveryQuery.ilike("drawing_number", `%${drawingNumber}%`);
   }
 
   if (companyName) {
-    deliveryQuery = deliveryQuery.ilike(
-      "orders.companies.company_name",
-      `%${companyName}%`,
-    );
+    deliveryQuery = deliveryQuery.ilike("company_name", `%${companyName}%`);
   }
 
   if (
@@ -82,19 +72,7 @@ export default async function Deliveries({
     (ALLOWED_SORT_COLUMNS as readonly string[]).includes(sortBy)
   ) {
     const ascending = sortOrder !== "desc";
-    if ((ORDERS_TABLE_SORT_COLUMNS as readonly string[]).includes(sortBy)) {
-      deliveryQuery = deliveryQuery.order(sortBy, {
-        referencedTable: "orders",
-        ascending,
-      });
-    } else if (sortBy === "company_name") {
-      deliveryQuery = deliveryQuery.order("company_name", {
-        referencedTable: "orders.companies",
-        ascending,
-      });
-    } else {
-      deliveryQuery = deliveryQuery.order(sortBy, { ascending });
-    }
+    deliveryQuery = deliveryQuery.order(sortBy, { ascending });
   } else {
     deliveryQuery = deliveryQuery.order("id", { ascending: true });
   }
@@ -115,32 +93,12 @@ export default async function Deliveries({
   }
 
   const deliveryNoteItems = rawDeliveryNoteItems?.map((item) => {
-    const { order_id, orders, ...rest } = item as typeof item & {
-      order_id: number;
-      orders: {
-        order_code: string;
-        subject: string;
-        drawing_number: string | null;
-        unit_price: number | null;
-        notes: string | null;
-        companies: { company_name: string } | null;
-      } | null;
+    const { total_amount, ...rest } = item as typeof item & {
+      total_amount: number | null;
     };
-    const unit_price = orders?.unit_price ?? null;
-    const delivered_quantity = rest.delivered_quantity ?? null;
     return {
       ...rest,
-      order_id,
-      order_code: orders?.order_code ?? order_id,
-      subject: orders?.subject ?? null,
-      drawing_number: orders?.drawing_number ?? null,
-      company_name: orders?.companies?.company_name ?? null,
-      unit_price,
-      amount:
-        unit_price !== null && delivered_quantity !== null
-          ? unit_price * delivered_quantity
-          : null,
-      order_notes: orders?.notes ?? null,
+      amount: total_amount,
     };
   });
 
