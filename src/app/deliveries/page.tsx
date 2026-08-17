@@ -6,6 +6,7 @@ import { updateOrderNotes } from "./actions";
 const COLUMN_LABELS: Record<string, string> = {
   id: "ID",
   delivery_note_id: "納品書ID",
+  delivery_date: "納品日",
   order_code: "受注No",
   subject: "件名",
   drawing_number: "図番",
@@ -15,7 +16,11 @@ const COLUMN_LABELS: Record<string, string> = {
   amount: "金額",
 };
 
-const OWN_TABLE_SORT_COLUMNS = ["id", "delivered_quantity"] as const;
+const OWN_TABLE_SORT_COLUMNS = [
+  "id",
+  "delivery_note_id",
+  "delivered_quantity",
+] as const;
 
 const ORDERS_TABLE_SORT_COLUMNS = [
   "order_code",
@@ -44,6 +49,7 @@ export default async function Deliveries({
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>;
 }) {
   const resolvedSearchParams = await searchParams;
+  const orderCode = getSingleParam(resolvedSearchParams, "order_code");
   const subject = getSingleParam(resolvedSearchParams, "subject");
   const drawingNumber = getSingleParam(resolvedSearchParams, "drawing_number");
   const companyName = getSingleParam(resolvedSearchParams, "company_name");
@@ -54,6 +60,10 @@ export default async function Deliveries({
   let deliveryQuery = supabase
     .from("deliveries_with_order_info")
     .select("*");
+
+  if (orderCode) {
+    deliveryQuery = deliveryQuery.ilike("order_code", `%${orderCode}%`);
+  }
 
   if (subject) {
     deliveryQuery = deliveryQuery.ilike("subject", `%${subject}%`);
@@ -118,6 +128,7 @@ export default async function Deliveries({
 
   function buildSortHref(col: string): string {
     const params = new URLSearchParams();
+    if (orderCode) params.set("order_code", orderCode);
     if (subject) params.set("subject", subject);
     if (drawingNumber) params.set("drawing_number", drawingNumber);
     if (companyName) params.set("company_name", companyName);
@@ -138,6 +149,17 @@ export default async function Deliveries({
         method="GET"
         className="mb-4 flex items-center gap-2"
       >
+        <label htmlFor="order_code" className="text-sm">
+          受注No
+        </label>
+        <input
+          type="text"
+          id="order_code"
+          name="order_code"
+          defaultValue={orderCode}
+          placeholder="受注Noで検索（部分一致）"
+          className="rounded border border-zinc-300 px-2 py-1 text-sm"
+        />
         <label htmlFor="subject" className="text-sm">
           件名
         </label>

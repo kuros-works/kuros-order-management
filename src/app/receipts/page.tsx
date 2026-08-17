@@ -20,7 +20,7 @@ const COLUMN_LABELS: Record<string, string> = {
   amount: "金額",
 };
 
-const OWN_TABLE_SORT_COLUMNS = ["id"] as const;
+const OWN_TABLE_SORT_COLUMNS = ["id", "receipt_code"] as const;
 
 const INVOICES_TABLE_SORT_COLUMNS = ["invoice_code", "issued_date"] as const;
 
