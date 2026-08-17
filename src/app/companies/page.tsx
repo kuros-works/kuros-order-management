@@ -8,10 +8,11 @@ const COLUMN_LABELS: Record<string, string> = {
   phone: "電話番号",
   contact_name: "担当者名",
   email: "メールアドレス",
-  payment_terms_days: "支払サイト（日）",
+  payment_terms_days: "支払いサイト",
   invoice_registration_number: "インボイス登録番号",
   registered_date: "登録日",
   company_name: "会社名",
+  notes: "備考",
 };
 
 export default async function Companies() {
