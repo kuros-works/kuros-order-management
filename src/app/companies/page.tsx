@@ -1,5 +1,19 @@
 import { createClient } from "@/lib/supabase-server";
 
+const COLUMN_LABELS: Record<string, string> = {
+  id: "ID",
+  company_code: "会社コード",
+  postal_code: "郵便番号",
+  address: "住所",
+  phone: "電話番号",
+  contact_name: "担当者名",
+  email: "メールアドレス",
+  payment_terms_days: "支払サイト（日）",
+  invoice_registration_number: "インボイス登録番号",
+  registered_date: "登録日",
+  company_name: "会社名",
+};
+
 export default async function Companies() {
   const supabase = await createClient();
   const { data: companies, error } = await supabase
@@ -32,16 +46,16 @@ export default async function Companies() {
       {!companies || companies.length === 0 ? (
         <p>データがありません</p>
       ) : (
-        <div className="overflow-x-auto">
+        <div className="max-h-[70vh] overflow-auto">
           <table className="min-w-full border-collapse border border-zinc-300 text-sm">
             <thead>
               <tr>
                 {columns.map((col) => (
                   <th
                     key={col}
-                    className="border border-zinc-300 bg-zinc-100 px-3 py-2 text-left"
+                    className="sticky top-0 border border-zinc-300 bg-zinc-100 px-3 py-2 text-left"
                   >
-                    {col}
+                    {COLUMN_LABELS[col] ?? col}
                   </th>
                 ))}
               </tr>
