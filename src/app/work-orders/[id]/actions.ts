@@ -3,16 +3,15 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase-server";
-import { updateOrderNotes } from "../actions";
 
-export type CreateWorkOrderState = {
+export type WorkOrderFormState = {
   error: string | null;
 };
 
 export async function createWorkOrder(
-  prevState: CreateWorkOrderState,
+  prevState: WorkOrderFormState,
   formData: FormData,
-): Promise<CreateWorkOrderState> {
+): Promise<WorkOrderFormState> {
   const supabase = await createClient();
 
   const orderId = Number(formData.get("order_id"));
@@ -24,8 +23,6 @@ export async function createWorkOrder(
   if (!assignee) {
     return { error: "担当者を入力してください" };
   }
-
-  const notes = String(formData.get("notes") ?? "").trim();
 
   const { data: lastWorkOrder, error: lastWorkOrderError } = await supabase
     .from("work_orders")
@@ -62,14 +59,37 @@ export async function createWorkOrder(
     return { error: `work_ordersへの保存に失敗しました: ${error.message}` };
   }
 
-  if (notes) {
-    const { error: notesError } = await updateOrderNotes(orderId, notes);
-    if (notesError) {
-      return { error: notesError };
-    }
+  revalidatePath("/");
+  revalidatePath("/work-orders");
+  redirect("/work-orders");
+}
+
+export async function updateWorkOrder(
+  prevState: WorkOrderFormState,
+  formData: FormData,
+): Promise<WorkOrderFormState> {
+  const workOrderId = Number(formData.get("id"));
+  if (!Number.isFinite(workOrderId)) {
+    return { error: "製造指示書IDが不正です" };
+  }
+
+  const assignee = String(formData.get("assignee") ?? "").trim();
+  if (!assignee) {
+    return { error: "担当者を入力してください" };
+  }
+
+  const supabase = await createClient();
+  const { error } = await supabase
+    .from("work_orders")
+    .update({ assignee })
+    .eq("id", workOrderId);
+
+  if (error) {
+    return { error: `work_ordersの更新に失敗しました: ${error.message}` };
   }
 
   revalidatePath("/");
   revalidatePath("/work-orders");
+  revalidatePath(`/work-orders/${workOrderId}`);
   redirect("/work-orders");
 }

@@ -207,7 +207,16 @@ export default async function WorkOrders({
                 <tr key={i}>
                   {columns.map((col) => (
                     <td key={col} className="border border-zinc-300 px-3 py-2">
-                      {String(workOrder[col] ?? "")}
+                      {col === "id" ? (
+                        <Link
+                          href={`/work-orders/${workOrder.id}`}
+                          className="text-blue-600 hover:underline"
+                        >
+                          {workOrder.id}
+                        </Link>
+                      ) : (
+                        String(workOrder[col] ?? "")
+                      )}
                     </td>
                   ))}
                   <td className="border border-zinc-300 px-3 py-2">

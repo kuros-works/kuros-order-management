@@ -72,7 +72,7 @@ export default async function OrderDetailPage({ params }: PageProps) {
 
   const { data: workOrders, error: workOrdersError } = await supabase
     .from("work_orders")
-    .select("assignee")
+    .select("id, work_order_code, assignee, issued_date")
     .eq("order_id", orderId)
     .order("id", { ascending: true });
 
@@ -89,14 +89,16 @@ export default async function OrderDetailPage({ params }: PageProps) {
     );
   }
 
-  const assignee = workOrders && workOrders.length > 0 ? workOrders[0].assignee : null;
-  const manufacturingStatus =
-    workOrders && workOrders.length > 0 ? "製造指示済み" : "未製造指示";
+  const workOrder = workOrders && workOrders.length > 0 ? workOrders[0] : null;
+  const assignee = workOrder?.assignee ?? null;
+  const manufacturingStatus = workOrder ? "製造指示済み" : "未製造指示";
 
   const { data: deliveryNoteItems, error: deliveryNoteItemsError } =
     await supabase
       .from("delivery_note_items")
-      .select("delivered_quantity, delivery_notes(created_date)")
+      .select(
+        "id, delivered_quantity, notes, delivery_notes(delivery_note_code, created_date)",
+      )
       .eq("order_id", orderId);
 
   if (deliveryNoteItemsError) {
@@ -114,15 +116,29 @@ export default async function OrderDetailPage({ params }: PageProps) {
 
   let deliveredQuantity = 0;
   let latestDeliveryDate: string | null = null;
+  const deliveryNoteItemsDetail: {
+    id: number;
+    delivered_quantity: number;
+    notes: string | null;
+    delivery_note_code: string;
+    created_date: string;
+  }[] = [];
   for (const item of deliveryNoteItems ?? []) {
     const { delivery_notes } = item as typeof item & {
-      delivery_notes: { created_date: string } | null;
+      delivery_notes: { delivery_note_code: string; created_date: string } | null;
     };
     deliveredQuantity += item.delivered_quantity;
     const createdDate = delivery_notes?.created_date;
     if (createdDate && (!latestDeliveryDate || createdDate > latestDeliveryDate)) {
       latestDeliveryDate = createdDate;
     }
+    deliveryNoteItemsDetail.push({
+      id: item.id,
+      delivered_quantity: item.delivered_quantity,
+      notes: item.notes,
+      delivery_note_code: delivery_notes?.delivery_note_code ?? "-",
+      created_date: createdDate ?? "-",
+    });
   }
   const remainingQuantity = order.quantity - deliveredQuantity;
 
@@ -135,7 +151,9 @@ export default async function OrderDetailPage({ params }: PageProps) {
 
   const { data: invoiceRows, error: invoicesError } = await supabase
     .from("invoices")
-    .select("id, payment_status, sent_flag, receipts(sent_flag)")
+    .select(
+      "id, invoice_code, issued_date, payment_status, sent_flag, notes, receipts(id, receipt_code, created_date, sent_flag, sent_date, received_date, received_amount)",
+    )
     .eq("order_id", orderId)
     .order("id", { ascending: true });
 
@@ -152,21 +170,36 @@ export default async function OrderDetailPage({ params }: PageProps) {
     );
   }
 
+  type ReceiptRow = {
+    id: number;
+    receipt_code: string;
+    created_date: string;
+    sent_flag: boolean;
+    sent_date: string | null;
+    received_date: string | null;
+    received_amount: number | null;
+  };
+
   type InvoiceRow = {
+    id: number;
+    invoice_code: string;
+    issued_date: string;
     payment_status: string;
     sent_flag: boolean;
-    receipts: { sent_flag: boolean }[] | { sent_flag: boolean } | null;
+    notes: string | null;
+    receipts: ReceiptRow[] | ReceiptRow | null;
   };
 
   const invoiceRow =
     invoiceRows && invoiceRows.length > 0
       ? (invoiceRows[invoiceRows.length - 1] as InvoiceRow)
       : null;
-  const receiptSentFlag = invoiceRow
+  const receiptRecord = invoiceRow
     ? Array.isArray(invoiceRow.receipts)
-      ? (invoiceRow.receipts[0]?.sent_flag ?? null)
-      : (invoiceRow.receipts?.sent_flag ?? null)
+      ? (invoiceRow.receipts[0] ?? null)
+      : invoiceRow.receipts
     : null;
+  const receiptSentFlag = receiptRecord?.sent_flag ?? null;
 
   const invoiceStatus =
     deliveryStatus !== "完納" ? "" : invoiceRow ? "請求済み" : "未請求";
@@ -212,10 +245,37 @@ export default async function OrderDetailPage({ params }: PageProps) {
     receipt_sent_status_label: receiptSentStatusLabel,
   };
 
+  const invoiceDetail = invoiceRow
+    ? {
+        id: invoiceRow.id,
+        invoice_code: invoiceRow.invoice_code,
+        issued_date: invoiceRow.issued_date,
+        notes: invoiceRow.notes,
+      }
+    : null;
+
+  const receiptDetail = receiptRecord
+    ? {
+        id: receiptRecord.id,
+        receipt_code: receiptRecord.receipt_code,
+        created_date: receiptRecord.created_date,
+        sent_date: receiptRecord.sent_date,
+        received_date: receiptRecord.received_date,
+        received_amount: receiptRecord.received_amount,
+      }
+    : null;
+
   return (
     <div className="p-8">
       <h1 className="mb-4 text-xl font-bold">受注編集</h1>
-      <OrderForm order={orderWithDetail} companies={companies ?? []} />
+      <OrderForm
+        order={orderWithDetail}
+        companies={companies ?? []}
+        workOrder={workOrder}
+        deliveryNoteItems={deliveryNoteItemsDetail}
+        invoice={invoiceDetail}
+        receipt={receiptDetail}
+      />
     </div>
   );
 }
