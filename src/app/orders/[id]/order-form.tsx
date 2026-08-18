@@ -28,6 +28,21 @@ type Order = {
   completion_date: string | null;
   notes: string | null;
   batch_invoice_id: number | null;
+  invoice_sent_date: string | null;
+  payment_date: string | null;
+  receipt_sent_date: string | null;
+  assignee: string | null;
+  total_amount: number;
+  delivered_quantity: number;
+  remaining_quantity: number;
+  latest_delivery_date: string | null;
+  aggregated_status: string;
+  manufacturing_status: string;
+  delivery_status: string;
+  invoice_status: string;
+  payment_status_label: string;
+  sent_status_label: string;
+  receipt_sent_status_label: string;
 };
 
 const initialState: OrderFormState = { error: null };
@@ -151,6 +166,14 @@ export function OrderForm({
                 className="w-full rounded border border-zinc-300 px-3 py-2 text-sm"
               />
             </div>
+            {isEdit && (
+              <div>
+                <p className="mb-1 block text-sm font-bold">担当者</p>
+                <div className="rounded border border-zinc-200 bg-zinc-50 p-3 text-sm text-zinc-600">
+                  {order.assignee ?? "-"}
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -201,6 +224,38 @@ export function OrderForm({
                 className="w-full rounded border border-zinc-300 px-3 py-2 text-sm"
               />
             </div>
+            {isEdit && (
+              <div>
+                <p className="mb-1 block text-sm font-bold">合計金額</p>
+                <div className="rounded border border-zinc-200 bg-zinc-50 p-3 text-sm text-zinc-600">
+                  {order.total_amount}
+                </div>
+              </div>
+            )}
+            {isEdit && (
+              <div>
+                <p className="mb-1 block text-sm font-bold">納品済数量</p>
+                <div className="rounded border border-zinc-200 bg-zinc-50 p-3 text-sm text-zinc-600">
+                  {order.delivered_quantity}
+                </div>
+              </div>
+            )}
+            {isEdit && (
+              <div>
+                <p className="mb-1 block text-sm font-bold">残数量</p>
+                <div className="rounded border border-zinc-200 bg-zinc-50 p-3 text-sm text-zinc-600">
+                  {order.remaining_quantity}
+                </div>
+              </div>
+            )}
+            {isEdit && (
+              <div>
+                <p className="mb-1 block text-sm font-bold">最終納品日</p>
+                <div className="rounded border border-zinc-200 bg-zinc-50 p-3 text-sm text-zinc-600">
+                  {order.latest_delivery_date ?? "-"}
+                </div>
+              </div>
+            )}
           </CardContent>
         </Card>
 
@@ -208,8 +263,73 @@ export function OrderForm({
           <CardHeader>
             <CardTitle>進捗</CardTitle>
           </CardHeader>
-          <CardContent>
-            <p className="text-sm text-zinc-400">準備中（次回対応）</p>
+          <CardContent className="space-y-4">
+            {isEdit ? (
+              <>
+                <div>
+                  <p className="mb-1 block text-sm font-bold">進捗状況</p>
+                  <div className="rounded border border-zinc-200 bg-zinc-50 p-3 text-sm text-zinc-600">
+                    {order.aggregated_status}
+                  </div>
+                </div>
+                <div>
+                  <p className="mb-1 block text-sm font-bold">製造指示状況</p>
+                  <div className="rounded border border-zinc-200 bg-zinc-50 p-3 text-sm text-zinc-600">
+                    {order.manufacturing_status}
+                  </div>
+                </div>
+                <div>
+                  <p className="mb-1 block text-sm font-bold">納品状況</p>
+                  <div className="rounded border border-zinc-200 bg-zinc-50 p-3 text-sm text-zinc-600">
+                    {order.delivery_status}
+                  </div>
+                </div>
+                <div>
+                  <p className="mb-1 block text-sm font-bold">請求状況</p>
+                  <div className="rounded border border-zinc-200 bg-zinc-50 p-3 text-sm text-zinc-600">
+                    {order.invoice_status || "-"}
+                  </div>
+                </div>
+                <div>
+                  <p className="mb-1 block text-sm font-bold">入金状況</p>
+                  <div className="rounded border border-zinc-200 bg-zinc-50 p-3 text-sm text-zinc-600">
+                    {order.payment_status_label}
+                  </div>
+                </div>
+                <div>
+                  <p className="mb-1 block text-sm font-bold">請求書送信状況</p>
+                  <div className="rounded border border-zinc-200 bg-zinc-50 p-3 text-sm text-zinc-600">
+                    {order.sent_status_label}
+                  </div>
+                </div>
+                <div>
+                  <p className="mb-1 block text-sm font-bold">領収書送信状況</p>
+                  <div className="rounded border border-zinc-200 bg-zinc-50 p-3 text-sm text-zinc-600">
+                    {order.receipt_sent_status_label}
+                  </div>
+                </div>
+                <div>
+                  <p className="mb-1 block text-sm font-bold">請求書送信日</p>
+                  <div className="rounded border border-zinc-200 bg-zinc-50 p-3 text-sm text-zinc-600">
+                    {order.invoice_sent_date ?? "-"}
+                  </div>
+                </div>
+                <div>
+                  <p className="mb-1 block text-sm font-bold">入金日</p>
+                  <div className="rounded border border-zinc-200 bg-zinc-50 p-3 text-sm text-zinc-600">
+                    {order.payment_date ?? "-"}
+                  </div>
+                </div>
+                <div>
+                  <p className="mb-1 block text-sm font-bold">領収書送信日</p>
+                  <div className="rounded border border-zinc-200 bg-zinc-50 p-3 text-sm text-zinc-600">
+                    {order.receipt_sent_date ?? "-"}
+                  </div>
+                </div>
+              </>
+            ) : (
+              <p className="text-sm text-zinc-400">保存後に表示されます</p>
+            )}
           </CardContent>
         </Card>
 
