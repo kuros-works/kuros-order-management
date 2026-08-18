@@ -130,6 +130,9 @@ export function InvoiceForm({ orders }: { orders: Order[] }) {
         <label htmlFor="notes" className="mb-1 block text-sm font-bold">
           備考
         </label>
+        <p className="mb-1 text-xs text-zinc-500">
+          この受注の備考として保存されます（既存の備考は上書きされます）
+        </p>
         <textarea
           id="notes"
           name="notes"

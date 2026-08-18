@@ -150,7 +150,7 @@ export default async function OrderDetailPage({ params }: PageProps) {
   const { data: invoiceRows, error: invoicesError } = await supabase
     .from("invoices")
     .select(
-      "id, invoice_code, issued_date, payment_status, sent_flag, notes, receipts(id, receipt_code, created_date, sent_flag, sent_date, received_date, received_amount)",
+      "id, invoice_code, issued_date, payment_status, sent_flag, receipts(id, receipt_code, created_date, sent_flag, sent_date, received_date, received_amount)",
     )
     .eq("order_id", orderId)
     .order("id", { ascending: true });
@@ -184,7 +184,6 @@ export default async function OrderDetailPage({ params }: PageProps) {
     issued_date: string;
     payment_status: string;
     sent_flag: boolean;
-    notes: string | null;
     receipts: ReceiptRow[] | ReceiptRow | null;
   };
 
@@ -248,7 +247,6 @@ export default async function OrderDetailPage({ params }: PageProps) {
         id: invoiceRow.id,
         invoice_code: invoiceRow.invoice_code,
         issued_date: invoiceRow.issued_date,
-        notes: invoiceRow.notes,
       }
     : null;
 

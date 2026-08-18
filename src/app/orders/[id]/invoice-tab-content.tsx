@@ -4,17 +4,18 @@ type Invoice = {
   id: number;
   invoice_code: string;
   issued_date: string;
-  notes: string | null;
 };
 
 export function InvoiceTabContent({
   invoice,
   paymentStatusLabel,
   sentStatusLabel,
+  orderNotes,
 }: {
   invoice: Invoice | null;
   paymentStatusLabel: string;
   sentStatusLabel: string;
+  orderNotes: string | null;
 }) {
   if (!invoice) {
     return (
@@ -56,7 +57,7 @@ export function InvoiceTabContent({
       <div>
         <p className="mb-1 block text-sm font-bold">備考</p>
         <div className="rounded border border-zinc-200 bg-zinc-50 p-3 text-sm text-zinc-600">
-          {invoice.notes ?? "-"}
+          {orderNotes ?? "-"}
         </div>
       </div>
     </div>

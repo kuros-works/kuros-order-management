@@ -4,6 +4,7 @@ import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase-server";
 import { getOrdersWithRemainingQuantity } from "@/lib/backlog";
+import { updateOrderNotes } from "../actions";
 
 export type CreateInvoiceState = {
   error: string | null;
@@ -86,7 +87,6 @@ export async function createInvoice(
       company_id: order.company_id,
       invoice_code: invoiceCode,
       issued_date: issuedDate,
-      notes: notes || null,
     })
     .select("id")
     .single();
@@ -98,6 +98,17 @@ export async function createInvoice(
     return {
       error: `invoicesへの保存に失敗しました: ${insertError?.message}`,
     };
+  }
+
+  if (notes) {
+    const { error: orderNotesError } = await updateOrderNotes(
+      orderId,
+      notes,
+    );
+
+    if (orderNotesError) {
+      return { error: orderNotesError };
+    }
   }
 
   revalidatePath("/invoices");

@@ -68,7 +68,6 @@ type Invoice = {
   id: number;
   invoice_code: string;
   issued_date: string;
-  notes: string | null;
 };
 
 type Receipt = {
@@ -438,6 +437,7 @@ export function OrderForm({
                 invoice={invoice}
                 paymentStatusLabel={order.payment_status_label}
                 sentStatusLabel={order.sent_status_label}
+                orderNotes={order?.notes ?? null}
               />
             </TabsContent>
             <TabsContent value="receipt">
