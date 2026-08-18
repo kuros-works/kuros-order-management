@@ -255,7 +255,16 @@ export default async function Deliveries({
                 <tr key={i}>
                   {columns.map((col) => (
                     <td key={col} className="border border-zinc-300 px-3 py-2">
-                      {String(item[col] ?? "")}
+                      {col === "id" ? (
+                        <Link
+                          href={`/deliveries/${item.id}`}
+                          className="text-blue-600 hover:underline"
+                        >
+                          {item.id}
+                        </Link>
+                      ) : (
+                        String(item[col] ?? "")
+                      )}
                     </td>
                   ))}
                   <td className="border border-zinc-300 px-3 py-2">
