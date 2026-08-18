@@ -236,7 +236,16 @@ export default async function Invoices({
                 <tr key={i}>
                   {columns.map((col) => (
                     <td key={col} className="border border-zinc-300 px-3 py-2">
-                      {String(invoice[col] ?? "")}
+                      {col === "id" ? (
+                        <Link
+                          href={`/invoices/${invoice.id}`}
+                          className="text-blue-600 hover:underline"
+                        >
+                          {invoice.id}
+                        </Link>
+                      ) : (
+                        String(invoice[col] ?? "")
+                      )}
                     </td>
                   ))}
                   <td className="border border-zinc-300 px-3 py-2">
