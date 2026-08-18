@@ -3,15 +3,16 @@ import Link from "next/link";
 type DeliveryNoteItem = {
   id: number;
   delivered_quantity: number;
-  notes: string | null;
   delivery_note_code: string;
   created_date: string;
 };
 
 export function DeliveryTabContent({
   items,
+  orderNotes,
 }: {
   items: DeliveryNoteItem[];
+  orderNotes: string | null;
 }) {
   if (items.length === 0) {
     return (
@@ -55,7 +56,7 @@ export function DeliveryTabContent({
               {item.delivered_quantity}
             </td>
             <td className="border border-zinc-300 px-3 py-2">
-              {item.notes ?? ""}
+              {orderNotes ?? ""}
             </td>
           </tr>
         ))}

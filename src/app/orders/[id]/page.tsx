@@ -97,7 +97,7 @@ export default async function OrderDetailPage({ params }: PageProps) {
     await supabase
       .from("delivery_note_items")
       .select(
-        "id, delivered_quantity, notes, delivery_notes(delivery_note_code, created_date)",
+        "id, delivered_quantity, delivery_notes(delivery_note_code, created_date)",
       )
       .eq("order_id", orderId);
 
@@ -119,7 +119,6 @@ export default async function OrderDetailPage({ params }: PageProps) {
   const deliveryNoteItemsDetail: {
     id: number;
     delivered_quantity: number;
-    notes: string | null;
     delivery_note_code: string;
     created_date: string;
   }[] = [];
@@ -135,7 +134,6 @@ export default async function OrderDetailPage({ params }: PageProps) {
     deliveryNoteItemsDetail.push({
       id: item.id,
       delivered_quantity: item.delivered_quantity,
-      notes: item.notes,
       delivery_note_code: delivery_notes?.delivery_note_code ?? "-",
       created_date: createdDate ?? "-",
     });

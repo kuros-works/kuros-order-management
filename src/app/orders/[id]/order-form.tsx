@@ -60,7 +60,6 @@ type WorkOrder = {
 type DeliveryNoteItem = {
   id: number;
   delivered_quantity: number;
-  notes: string | null;
   delivery_note_code: string;
   created_date: string;
 };
@@ -429,7 +428,10 @@ export function OrderForm({
               <WorkOrderTabContent workOrder={workOrder} />
             </TabsContent>
             <TabsContent value="delivery">
-              <DeliveryTabContent items={deliveryNoteItems} />
+              <DeliveryTabContent
+                items={deliveryNoteItems}
+                orderNotes={order?.notes ?? null}
+              />
             </TabsContent>
             <TabsContent value="invoice">
               <InvoiceTabContent

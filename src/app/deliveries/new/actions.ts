@@ -72,7 +72,6 @@ export async function createDelivery(
       delivery_note_id: deliveryNote.id,
       order_id: orderId,
       delivered_quantity: deliveredQuantity,
-      notes: notes || null,
     });
 
   if (deliveryNoteItemError) {
@@ -90,6 +89,19 @@ export async function createDelivery(
     return {
       error: `delivery_note_itemsへの保存に失敗しました: ${deliveryNoteItemError.message}`,
     };
+  }
+
+  if (notes) {
+    const { error: orderNotesError } = await supabase
+      .from("orders")
+      .update({ notes })
+      .eq("id", orderId);
+
+    if (orderNotesError) {
+      return {
+        error: `ordersの更新に失敗しました: ${orderNotesError.message}`,
+      };
+    }
   }
 
   revalidatePath("/deliveries");
