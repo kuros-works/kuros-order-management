@@ -299,7 +299,16 @@ export default async function Receipts({
                 <tr key={i}>
                   {columns.map((col) => (
                     <td key={col} className="border border-zinc-300 px-3 py-2">
-                      {String(receipt[col] ?? "")}
+                      {col === "id" ? (
+                        <Link
+                          href={`/receipts/${receipt.id}`}
+                          className="text-blue-600 hover:underline"
+                        >
+                          {receipt.id}
+                        </Link>
+                      ) : (
+                        String(receipt[col] ?? "")
+                      )}
                     </td>
                   ))}
                   <td className="border border-zinc-300 px-3 py-2">
