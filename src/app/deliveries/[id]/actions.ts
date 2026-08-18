@@ -51,5 +51,7 @@ export async function updateDeliveryDetail(
 
   revalidatePath("/deliveries");
   revalidatePath(`/deliveries/${deliveryItemId}`);
+  revalidatePath("/invoices");
+  revalidatePath("/invoices/new");
   redirect("/deliveries");
 }

@@ -105,5 +105,7 @@ export async function createDelivery(
   }
 
   revalidatePath("/deliveries");
+  revalidatePath("/invoices");
+  revalidatePath("/invoices/new");
   redirect("/deliveries");
 }
