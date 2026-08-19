@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase-server";
 import { NotesInlineEditor } from "@/components/NotesInlineEditor";
+import { ListPageHeader } from "@/components/layout/list-page-header";
 import { SentFlagToggle } from "./sent-flag-toggle";
 import { PaymentConfirmForm } from "./payment-confirm-form";
 import { updateOrderNotes } from "./actions";
@@ -190,9 +191,13 @@ export default async function Receipts({
 
   return (
     <div className="p-8">
-      <h1 className="mb-4 text-xl font-bold">
-        receipts 一覧（{receipts?.length ?? 0}件）
-      </h1>
+      <ListPageHeader
+        heading={
+          <h1 className="text-xl font-bold">
+            receipts 一覧（{receipts?.length ?? 0}件）
+          </h1>
+        }
+      />
       <form
         action="/receipts"
         method="GET"

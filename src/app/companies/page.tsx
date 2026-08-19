@@ -1,5 +1,6 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase-server";
+import { ListPageHeader } from "@/components/layout/list-page-header";
 
 const COLUMN_LABELS: Record<string, string> = {
   id: "ID",
@@ -42,9 +43,14 @@ export default async function Companies() {
 
   return (
     <div className="p-8">
-      <h1 className="mb-4 text-xl font-bold">
-        companies 一覧（{companies?.length ?? 0}件）
-      </h1>
+      <ListPageHeader
+        heading={
+          <h1 className="text-xl font-bold">
+            companies 一覧（{companies?.length ?? 0}件）
+          </h1>
+        }
+        newHref="/companies/new"
+      />
       {!companies || companies.length === 0 ? (
         <p>データがありません</p>
       ) : (

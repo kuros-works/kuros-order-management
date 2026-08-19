@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase-server";
 import { NotesInlineEditor } from "@/components/NotesInlineEditor";
+import { ListPageHeader } from "@/components/layout/list-page-header";
 import { updateOrderNotes } from "./actions";
 
 const COLUMN_LABELS: Record<string, string> = {
@@ -141,9 +142,14 @@ export default async function Deliveries({
 
   return (
     <div className="p-8">
-      <h1 className="mb-4 text-xl font-bold">
-        delivery_note_items 一覧（{deliveryNoteItems?.length ?? 0}件）
-      </h1>
+      <ListPageHeader
+        heading={
+          <h1 className="text-xl font-bold">
+            delivery_note_items 一覧（{deliveryNoteItems?.length ?? 0}件）
+          </h1>
+        }
+        newHref="/deliveries/new"
+      />
       <form
         action="/deliveries"
         method="GET"

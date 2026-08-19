@@ -5,6 +5,7 @@ import {
   getAggregatedStatus,
   getOrdersWithRemainingQuantity,
 } from "@/lib/backlog";
+import { ListPageHeader } from "@/components/layout/list-page-header";
 
 const STATUS_COLUMNS = [
   { key: "aggregated_status", label: "進捗状況" },
@@ -256,7 +257,12 @@ export default async function Home({
 
   return (
     <div className="p-8">
-      <h1 className="mb-4 text-xl font-bold">受注一覧（{orders.length}件）</h1>
+      <ListPageHeader
+        heading={
+          <h1 className="text-xl font-bold">受注一覧（{orders.length}件）</h1>
+        }
+        newHref="/orders/new"
+      />
       <form action="/" method="GET" className="mb-4 flex items-center gap-2">
         <label htmlFor="drawing_number" className="text-sm">
           図番
