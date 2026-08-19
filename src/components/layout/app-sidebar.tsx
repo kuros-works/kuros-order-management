@@ -4,7 +4,6 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
   ClipboardList,
-  FilePlus2,
   Building2,
   Factory,
   Truck,
@@ -25,10 +24,8 @@ import {
 
 const navLinks = [
   { href: "/", label: "受注", icon: ClipboardList },
-  { href: "/orders/new", label: "新規受注", icon: FilePlus2 },
   { href: "/companies", label: "顧客", icon: Building2 },
   { href: "/work-orders", label: "製造指示書", icon: Factory },
-  { href: "/work-orders/new", label: "新規製造指示書", icon: FilePlus2 },
   { href: "/deliveries", label: "納品書", icon: Truck },
   { href: "/invoices", label: "請求書", icon: Receipt },
   { href: "/receipts", label: "領収書", icon: BadgeCheck },
