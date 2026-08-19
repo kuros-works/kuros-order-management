@@ -1,3 +1,4 @@
+import Link from "next/link";
 import { createClient } from "@/lib/supabase-server";
 
 const COLUMN_LABELS: Record<string, string> = {
@@ -66,7 +67,16 @@ export default async function Companies() {
                 <tr key={i}>
                   {columns.map((col) => (
                     <td key={col} className="border border-zinc-300 px-3 py-2">
-                      {String(company[col] ?? "")}
+                      {col === "id" ? (
+                        <Link
+                          href={`/companies/${company.id}`}
+                          className="text-blue-600 hover:underline"
+                        >
+                          {company.id}
+                        </Link>
+                      ) : (
+                        String(company[col] ?? "")
+                      )}
                     </td>
                   ))}
                 </tr>
