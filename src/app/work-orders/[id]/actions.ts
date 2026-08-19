@@ -3,6 +3,7 @@
 import { redirect } from "next/navigation";
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase-server";
+import { updateOrderNotes } from "@/app/invoices/actions";
 
 export type WorkOrderFormState = {
   error: string | null;
@@ -23,6 +24,8 @@ export async function createWorkOrder(
   if (!assignee) {
     return { error: "担当者を入力してください" };
   }
+
+  const notes = String(formData.get("notes") ?? "").trim();
 
   const { data: lastWorkOrder, error: lastWorkOrderError } = await supabase
     .from("work_orders")
@@ -57,6 +60,17 @@ export async function createWorkOrder(
       return { error: "この受注にはすでに製造指示書が存在します" };
     }
     return { error: `work_ordersへの保存に失敗しました: ${error.message}` };
+  }
+
+  if (notes) {
+    const { error: orderNotesError } = await updateOrderNotes(
+      orderId,
+      notes,
+    );
+
+    if (orderNotesError) {
+      return { error: orderNotesError };
+    }
   }
 
   revalidatePath("/");

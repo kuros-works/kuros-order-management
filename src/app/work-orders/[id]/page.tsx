@@ -16,7 +16,7 @@ export default async function WorkOrderDetailPage({ params }: PageProps) {
   if (isNew) {
     const { data: orders, error } = await supabase
       .from("orders")
-      .select("id, order_code, subject")
+      .select("id, order_code, subject, notes")
       .order("id", { ascending: true });
 
     if (error) {
