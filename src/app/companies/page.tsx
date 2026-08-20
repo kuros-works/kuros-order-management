@@ -1,6 +1,8 @@
 import Link from "next/link";
 import { createClient } from "@/lib/supabase-server";
 import { ListPageHeader } from "@/components/layout/list-page-header";
+import { DeleteConfirmDialog } from "@/components/delete-confirm-dialog";
+import { deleteCompany } from "./actions";
 
 const COLUMN_LABELS: Record<string, string> = {
   id: "ID",
@@ -66,6 +68,9 @@ export default async function Companies() {
                     {COLUMN_LABELS[col] ?? col}
                   </th>
                 ))}
+                <th className="sticky top-0 border border-zinc-300 bg-zinc-100 px-3 py-2 text-left">
+                  操作
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -85,6 +90,13 @@ export default async function Companies() {
                       )}
                     </td>
                   ))}
+                  <td className="border border-zinc-300 px-3 py-2">
+                    <DeleteConfirmDialog
+                      id={company.id}
+                      description={`顧客 ${company.company_name}（ID: ${company.id}）を削除します。この操作は取り消せません。`}
+                      onDelete={deleteCompany}
+                    />
+                  </td>
                 </tr>
               ))}
             </tbody>

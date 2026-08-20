@@ -2,7 +2,8 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase-server";
 import { NotesInlineEditor } from "@/components/NotesInlineEditor";
 import { ListPageHeader } from "@/components/layout/list-page-header";
-import { updateOrderNotes } from "./actions";
+import { DeleteConfirmDialog } from "@/components/delete-confirm-dialog";
+import { updateOrderNotes, deleteInvoice } from "./actions";
 
 const COLUMN_LABELS: Record<string, string> = {
   id: "ID",
@@ -235,6 +236,9 @@ export default async function Invoices({
                 <th className="sticky top-0 border border-zinc-300 bg-zinc-100 px-3 py-2 text-left">
                   備考
                 </th>
+                <th className="sticky top-0 border border-zinc-300 bg-zinc-100 px-3 py-2 text-left">
+                  操作
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -259,6 +263,13 @@ export default async function Invoices({
                       id={invoice.order_id}
                       initialNotes={invoice.order_notes}
                       onSave={updateOrderNotes}
+                    />
+                  </td>
+                  <td className="border border-zinc-300 px-3 py-2">
+                    <DeleteConfirmDialog
+                      id={invoice.id}
+                      description={`請求書 ${invoice.invoice_code}（ID: ${invoice.id}）を削除します。この操作は取り消せません。`}
+                      onDelete={deleteInvoice}
                     />
                   </td>
                 </tr>

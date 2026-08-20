@@ -24,3 +24,24 @@ export async function updateOrderNotes(
   revalidatePath("/");
   return { error: null };
 }
+
+export async function deleteDeliveryNoteItem(
+  deliveryNoteItemId: number,
+): Promise<{ error: string | null }> {
+  const supabase = await createClient();
+
+  const { error: deleteError } = await supabase
+    .from("delivery_note_items")
+    .delete()
+    .eq("id", deliveryNoteItemId);
+
+  if (deleteError) {
+    return {
+      error: `delivery_note_itemsの削除に失敗しました: ${deleteError.message}`,
+    };
+  }
+
+  revalidatePath("/deliveries");
+  revalidatePath("/");
+  return { error: null };
+}

@@ -156,3 +156,24 @@ export async function confirmPayment(
   revalidatePath("/");
   return { error: null };
 }
+
+export async function deleteReceipt(
+  receiptId: number,
+): Promise<{ error: string | null }> {
+  const supabase = await createClient();
+
+  const { error: deleteError } = await supabase
+    .from("receipts")
+    .delete()
+    .eq("id", receiptId);
+
+  if (deleteError) {
+    return {
+      error: `receiptsの削除に失敗しました: ${deleteError.message}`,
+    };
+  }
+
+  revalidatePath("/receipts");
+  revalidatePath("/");
+  return { error: null };
+}

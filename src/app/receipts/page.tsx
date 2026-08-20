@@ -2,9 +2,10 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase-server";
 import { NotesInlineEditor } from "@/components/NotesInlineEditor";
 import { ListPageHeader } from "@/components/layout/list-page-header";
+import { DeleteConfirmDialog } from "@/components/delete-confirm-dialog";
 import { SentFlagToggle } from "./sent-flag-toggle";
 import { PaymentConfirmForm } from "./payment-confirm-form";
-import { updateOrderNotes } from "./actions";
+import { updateOrderNotes, deleteReceipt } from "./actions";
 
 const COLUMN_LABELS: Record<string, string> = {
   id: "ID",
@@ -297,6 +298,9 @@ export default async function Receipts({
                 <th className="sticky top-0 border border-zinc-300 bg-zinc-100 px-3 py-2 text-left">
                   備考
                 </th>
+                <th className="sticky top-0 border border-zinc-300 bg-zinc-100 px-3 py-2 text-left">
+                  操作
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -340,6 +344,13 @@ export default async function Receipts({
                       id={receipt.order_id}
                       initialNotes={receipt.order_notes}
                       onSave={updateOrderNotes}
+                    />
+                  </td>
+                  <td className="border border-zinc-300 px-3 py-2">
+                    <DeleteConfirmDialog
+                      id={receipt.id}
+                      description={`領収書 ${receipt.receipt_code}（ID: ${receipt.id}）を削除します。この操作は取り消せません。`}
+                      onDelete={deleteReceipt}
                     />
                   </td>
                 </tr>

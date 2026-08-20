@@ -6,6 +6,8 @@ import {
   getOrdersWithRemainingQuantity,
 } from "@/lib/backlog";
 import { ListPageHeader } from "@/components/layout/list-page-header";
+import { DeleteConfirmDialog } from "@/components/delete-confirm-dialog";
+import { deleteOrder } from "@/app/orders/actions";
 
 const STATUS_COLUMNS = [
   { key: "aggregated_status", label: "進捗状況" },
@@ -381,6 +383,9 @@ export default async function Home({
                     {col.label}
                   </th>
                 ))}
+                <th className="sticky top-0 border border-zinc-300 bg-zinc-100 px-3 py-2 text-left">
+                  操作
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -414,6 +419,13 @@ export default async function Home({
                       {order[col.key]}
                     </td>
                   ))}
+                  <td className="border border-zinc-300 px-3 py-2">
+                    <DeleteConfirmDialog
+                      id={order.id}
+                      description={`受注 ${order.order_code}（ID: ${order.id}）を削除します。この操作は取り消せません。`}
+                      onDelete={deleteOrder}
+                    />
+                  </td>
                 </tr>
               ))}
             </tbody>

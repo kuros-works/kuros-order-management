@@ -2,7 +2,8 @@ import Link from "next/link";
 import { createClient } from "@/lib/supabase-server";
 import { NotesInlineEditor } from "@/components/NotesInlineEditor";
 import { ListPageHeader } from "@/components/layout/list-page-header";
-import { updateOrderNotes } from "./actions";
+import { DeleteConfirmDialog } from "@/components/delete-confirm-dialog";
+import { updateOrderNotes, deleteWorkOrder } from "./actions";
 
 const COLUMN_LABELS: Record<string, string> = {
   id: "ID",
@@ -206,6 +207,9 @@ export default async function WorkOrders({
                 <th className="sticky top-0 border border-zinc-300 bg-zinc-100 px-3 py-2 text-left">
                   備考
                 </th>
+                <th className="sticky top-0 border border-zinc-300 bg-zinc-100 px-3 py-2 text-left">
+                  操作
+                </th>
               </tr>
             </thead>
             <tbody>
@@ -230,6 +234,13 @@ export default async function WorkOrders({
                       id={workOrder.order_id}
                       initialNotes={workOrder.order_notes}
                       onSave={updateOrderNotes}
+                    />
+                  </td>
+                  <td className="border border-zinc-300 px-3 py-2">
+                    <DeleteConfirmDialog
+                      id={workOrder.id}
+                      description={`製造指示書 ${workOrder.work_order_code}（ID: ${workOrder.id}）を削除します。この操作は取り消せません。`}
+                      onDelete={deleteWorkOrder}
                     />
                   </td>
                 </tr>

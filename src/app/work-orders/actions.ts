@@ -24,3 +24,24 @@ export async function updateOrderNotes(
   revalidatePath("/");
   return { error: null };
 }
+
+export async function deleteWorkOrder(
+  workOrderId: number,
+): Promise<{ error: string | null }> {
+  const supabase = await createClient();
+
+  const { error: deleteError } = await supabase
+    .from("work_orders")
+    .delete()
+    .eq("id", workOrderId);
+
+  if (deleteError) {
+    return {
+      error: `work_ordersの削除に失敗しました: ${deleteError.message}`,
+    };
+  }
+
+  revalidatePath("/work-orders");
+  revalidatePath("/");
+  return { error: null };
+}
