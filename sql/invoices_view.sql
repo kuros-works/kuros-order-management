@@ -1,6 +1,12 @@
 -- ============================================================
 -- invoices_with_order_info ビュー作成SQL
 -- 作成日: 2026-08-16
+-- 更新日: 2026-08-21 companiesとのJOINキーを i.company_id から
+--         o.company_id に変更（orders/work_orders/deliveries の
+--         各ビューと同じ「ordersのcompany_idを都度JOINする」方式に統一）。
+--         invoices.company_id は受注作成時点のスナップショット列であり、
+--         受注側でcompany_idが変更されても追従しないため、
+--         一覧の会社名表示が古いまま残る不具合があった。
 -- 目的: invoices/page.tsx で company_name 等でのソートを
 --       正しく動かすため、receipts_with_order_info と同じ要領で
 --       invoices / orders / companies をフラットに結合したビューを用意する。
@@ -28,4 +34,4 @@ SELECT
   c.company_name
 FROM invoices i
 LEFT JOIN orders o ON o.id = i.order_id
-LEFT JOIN companies c ON c.id = i.company_id;
+LEFT JOIN companies c ON c.id = o.company_id;
