@@ -21,7 +21,6 @@ CREATE OR REPLACE VIEW deliveries_with_order_info AS
 SELECT
   d.id,
   d.delivery_note_id,
-  dn.created_date AS delivery_date,
   d.order_id,
   d.delivered_quantity,
   d.notes,
@@ -32,7 +31,8 @@ SELECT
   o.unit_price,
   o.notes AS order_notes,
   (o.unit_price * d.delivered_quantity) AS total_amount,
-  c.company_name
+  c.company_name,
+  dn.created_date AS delivery_date
 FROM delivery_note_items d
 LEFT JOIN delivery_notes dn ON dn.id = d.delivery_note_id
 LEFT JOIN orders o ON o.id = d.order_id
