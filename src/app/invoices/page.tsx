@@ -3,6 +3,7 @@ import { createClient } from "@/lib/supabase-server";
 import { NotesInlineEditor } from "@/components/NotesInlineEditor";
 import { ListPageHeader } from "@/components/layout/list-page-header";
 import { DeleteConfirmDialog } from "@/components/delete-confirm-dialog";
+import { SentFlagToggle } from "./sent-flag-toggle";
 import { updateOrderNotes, deleteInvoice } from "./actions";
 
 const COLUMN_LABELS: Record<string, string> = {
@@ -10,8 +11,6 @@ const COLUMN_LABELS: Record<string, string> = {
   invoice_code: "請求書番号",
   issued_date: "請求日",
   payment_status: "入金状況",
-  sent_flag: "送付済み",
-  sent_date: "一括請求作成日",
   order_code: "受注No",
   subject: "件名",
   drawing_number: "図番",
@@ -114,7 +113,9 @@ export default async function Invoices({
             col !== "notes" &&
             col !== "order_id" &&
             col !== "order_notes" &&
-            col !== "company_id",
+            col !== "company_id" &&
+            col !== "sent_flag" &&
+            col !== "sent_date",
         )
       : [];
 
@@ -234,6 +235,9 @@ export default async function Invoices({
                   );
                 })}
                 <th className="sticky top-0 border border-zinc-300 bg-zinc-100 px-3 py-2 text-left">
+                  請求書送信状況
+                </th>
+                <th className="sticky top-0 border border-zinc-300 bg-zinc-100 px-3 py-2 text-left">
                   備考
                 </th>
                 <th className="sticky top-0 border border-zinc-300 bg-zinc-100 px-3 py-2 text-left">
@@ -258,6 +262,12 @@ export default async function Invoices({
                       )}
                     </td>
                   ))}
+                  <td className="border border-zinc-300 px-3 py-2">
+                    <SentFlagToggle
+                      invoiceId={invoice.id}
+                      sentFlag={Boolean(invoice.sent_flag)}
+                    />
+                  </td>
                   <td className="border border-zinc-300 px-3 py-2">
                     <NotesInlineEditor
                       id={invoice.order_id}

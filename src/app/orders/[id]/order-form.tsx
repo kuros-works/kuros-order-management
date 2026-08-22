@@ -33,9 +33,6 @@ type Order = {
   completion_date: string | null;
   notes: string | null;
   batch_invoice_id: number | null;
-  invoice_sent_date: string | null;
-  payment_date: string | null;
-  receipt_sent_date: string | null;
   assignee: string | null;
   total_amount: number;
   delivered_quantity: number;
@@ -349,24 +346,6 @@ export function OrderForm({
                     <p className="mb-1 block text-sm font-bold">領収書送信状況</p>
                     <div className="rounded border border-zinc-200 bg-zinc-50 p-3 text-sm text-zinc-600">
                       {order.receipt_sent_status_label}
-                    </div>
-                  </div>
-                  <div>
-                    <p className="mb-1 block text-sm font-bold">請求書送信日</p>
-                    <div className="rounded border border-zinc-200 bg-zinc-50 p-3 text-sm text-zinc-600">
-                      {order.invoice_sent_date ?? "-"}
-                    </div>
-                  </div>
-                  <div>
-                    <p className="mb-1 block text-sm font-bold">入金日</p>
-                    <div className="rounded border border-zinc-200 bg-zinc-50 p-3 text-sm text-zinc-600">
-                      {order.payment_date ?? "-"}
-                    </div>
-                  </div>
-                  <div>
-                    <p className="mb-1 block text-sm font-bold">領収書送信日</p>
-                    <div className="rounded border border-zinc-200 bg-zinc-50 p-3 text-sm text-zinc-600">
-                      {order.receipt_sent_date ?? "-"}
                     </div>
                   </div>
                 </>

@@ -1,6 +1,14 @@
 -- ============================================================
 -- orders_with_company_info ビュー作成SQL
 -- 作成日: 2026-08-16
+-- 更新日: 2026-08-22 入金確認フロー一本化に伴い、どこからも書き込まれて
+--         いなかった o.invoice_sent_date / o.payment_date /
+--         o.receipt_sent_date（幽霊列）をビュー定義から除去。
+--         入金状況等は invoices.payment_status / invoices.sent_flag /
+--         receipts.sent_flag を正とする（詳細は
+--         ddl-draft-102-orders-column-removal.sql を参照）。
+--         CREATE OR REPLACE VIEW は列の削除ができないため、
+--         適用時は当該DDLの通り DROP VIEW → 本SQLで再作成すること。
 -- 目的: 受注一覧（src/app/page.tsx、実体は src/lib/backlog.ts の
 --       getOrdersWithRemainingQuantity）で company_name のソートが
 --       正しく動いていなかったため、他の一覧と同じ要領で
@@ -28,9 +36,6 @@ SELECT
   o.order_date,
   o.desired_delivery_date,
   o.completion_date,
-  o.invoice_sent_date,
-  o.payment_date,
-  o.receipt_sent_date,
   o.status,
   o.notes,
   o.batch_invoice_id,

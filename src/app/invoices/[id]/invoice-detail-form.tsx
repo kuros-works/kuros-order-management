@@ -72,7 +72,7 @@ export function InvoiceDetailForm({ invoice }: { invoice: InvoiceDetail }) {
       </div>
 
       <div>
-        <p className="mb-1 block text-sm font-bold">一括請求作成日</p>
+        <p className="mb-1 block text-sm font-bold">請求書送信日</p>
         <div className="rounded border border-zinc-200 bg-zinc-50 p-3 text-sm text-zinc-600">
           {invoice.sent_date ?? "-"}
         </div>

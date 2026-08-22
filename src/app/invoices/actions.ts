@@ -3,6 +3,34 @@
 import { revalidatePath } from "next/cache";
 import { createClient } from "@/lib/supabase-server";
 
+export async function toggleSentFlag(
+  invoiceId: number,
+  nextSentFlag: boolean,
+): Promise<{ error: string | null }> {
+  const supabase = await createClient();
+
+  const today = new Date();
+  const sentDate = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+
+  const { error: updateError } = await supabase
+    .from("invoices")
+    .update({
+      sent_flag: nextSentFlag,
+      sent_date: nextSentFlag ? sentDate : null,
+    })
+    .eq("id", invoiceId);
+
+  if (updateError) {
+    return {
+      error: `invoicesの更新に失敗しました: ${updateError.message}`,
+    };
+  }
+
+  revalidatePath("/invoices");
+  revalidatePath("/");
+  return { error: null };
+}
+
 export async function updateOrderNotes(
   orderId: number,
   notes: string,
