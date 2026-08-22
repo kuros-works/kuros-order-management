@@ -25,7 +25,6 @@ export const ALLOWED_SORT_COLUMNS = [
   "id",
   "order_date",
   "desired_delivery_date",
-  "completion_date",
   "subject",
   "drawing_number",
   "quantity",

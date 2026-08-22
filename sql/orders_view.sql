@@ -9,6 +9,11 @@
 --         ddl-draft-102-orders-column-removal.sql を参照）。
 --         CREATE OR REPLACE VIEW は列の削除ができないため、
 --         適用時は当該DDLの通り DROP VIEW → 本SQLで再作成すること。
+-- 更新日: 2026-08-22 業務完了の判定を receipts.sent_flag で行う方針に
+--         決定したため、最終納品日（latest_delivery_date、アプリ側で
+--         別途集計）と実質重複していた o.completion_date もビュー定義
+--         から除去（詳細は ddl-draft-102-completion-date-removal.sql
+--         を参照）。
 -- 目的: 受注一覧（src/app/page.tsx、実体は src/lib/backlog.ts の
 --       getOrdersWithRemainingQuantity）で company_name のソートが
 --       正しく動いていなかったため、他の一覧と同じ要領で
@@ -35,7 +40,6 @@ SELECT
   o.unit_price,
   o.order_date,
   o.desired_delivery_date,
-  o.completion_date,
   o.status,
   o.notes,
   o.batch_invoice_id,

@@ -25,7 +25,6 @@ const COLUMN_LABELS: Record<string, string> = {
   company_id: "会社ID",
   order_date: "受注日",
   desired_delivery_date: "希望納期",
-  completion_date: "完了日",
   subject: "件名",
   drawing_number: "図番",
   quantity: "数量",

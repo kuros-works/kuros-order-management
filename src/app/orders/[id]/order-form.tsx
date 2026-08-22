@@ -30,7 +30,6 @@ type Order = {
   unit_price: number;
   order_date: string;
   desired_delivery_date: string | null;
-  completion_date: string | null;
   notes: string | null;
   batch_invoice_id: number | null;
   assignee: string | null;
@@ -170,14 +169,6 @@ export function OrderForm({
                   className="w-full rounded border border-zinc-300 px-3 py-2 text-sm"
                 />
               </div>
-              {isEdit && (
-                <div>
-                  <p className="mb-1 block text-sm font-bold">完了日</p>
-                  <div className="rounded border border-zinc-200 bg-zinc-50 p-3 text-sm text-zinc-600">
-                    {order.completion_date ?? "-"}
-                  </div>
-                </div>
-              )}
               <div>
                 <label htmlFor="subject" className="mb-1 block text-sm font-bold">
                   件名

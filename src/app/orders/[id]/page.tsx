@@ -48,7 +48,7 @@ export default async function OrderDetailPage({ params }: PageProps) {
   const { data: order, error: orderError } = await supabase
     .from("orders")
     .select(
-      "id, order_code, company_id, subject, drawing_number, quantity, unit, unit_price, order_date, desired_delivery_date, completion_date, notes, batch_invoice_id",
+      "id, order_code, company_id, subject, drawing_number, quantity, unit, unit_price, order_date, desired_delivery_date, notes, batch_invoice_id",
     )
     .eq("id", orderId)
     .maybeSingle();
