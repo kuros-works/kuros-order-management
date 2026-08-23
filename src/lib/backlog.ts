@@ -13,7 +13,6 @@ export type OrderWithRemainingQuantity = {
   desired_delivery_date: string | null;
   drawing_number: string | null;
   notes: string | null;
-  batch_invoice_id: number | null;
   company_name: string | null;
   assignee: string | null;
   delivered_quantity: number;
