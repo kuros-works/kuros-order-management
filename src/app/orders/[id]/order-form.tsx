@@ -31,7 +31,6 @@ type Order = {
   order_date: string;
   desired_delivery_date: string | null;
   notes: string | null;
-  batch_invoice_id: number | null;
   assignee: string | null;
   total_amount: number;
   delivered_quantity: number;
@@ -363,14 +362,6 @@ export function OrderForm({
                   className="w-full rounded border border-zinc-300 px-3 py-2 text-sm"
                 />
               </div>
-              {isEdit && (
-                <div>
-                  <p className="mb-1 block text-sm font-bold">一括請求ID</p>
-                  <div className="rounded border border-zinc-200 bg-zinc-50 p-3 text-sm text-zinc-600">
-                    {order.batch_invoice_id ?? "-"}
-                  </div>
-                </div>
-              )}
             </CardContent>
           </Card>
         </div>
