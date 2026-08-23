@@ -31,7 +31,6 @@ const COLUMN_LABELS: Record<string, string> = {
   unit: "単位",
   unit_price: "単価",
   total_amount: "合計金額",
-  batch_invoice_id: "一括請求ID",
   company_name: "会社名",
   delivered_quantity: "納品済数量",
   remaining_quantity: "残数量",
