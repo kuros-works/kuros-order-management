@@ -20,6 +20,8 @@ const COLUMN_LABELS: Record<string, string> = {
   unit_price: "単価",
   quantity: "数量",
   amount: "金額",
+  batch_invoice_no: "一括請求NO",
+  batch_receipt_no: "確定番号",
 };
 
 const OWN_TABLE_SORT_COLUMNS = ["id", "receipt_code"] as const;
@@ -142,6 +144,35 @@ export default async function Receipts({
     }
   }
 
+  // receipts_with_order_info ビューは receipts.batch_receipt_no を持たないため、
+  // 確定番号表示に必要な分だけ receipts から補完取得する。
+  const receiptIds = (rawReceipts ?? []).map((receipt) => receipt.id as number);
+  const batchReceiptNoById = new Map<number, string | null>();
+
+  if (receiptIds.length > 0) {
+    const { data: batchRows, error: batchError } = await supabase
+      .from("receipts")
+      .select("id, batch_receipt_no")
+      .in("id", receiptIds);
+
+    if (batchError) {
+      return (
+        <div className="p-8">
+          <h1 className="text-xl font-bold text-red-600">
+            確定番号の取得に失敗しました
+          </h1>
+          <pre className="mt-4 whitespace-pre-wrap text-sm text-red-500">
+            {batchError.message}
+          </pre>
+        </div>
+      );
+    }
+
+    for (const row of batchRows ?? []) {
+      batchReceiptNoById.set(row.id, row.batch_receipt_no);
+    }
+  }
+
   const receipts = rawReceipts?.map((receipt) => {
     const { total_amount, ...rest } = receipt as typeof receipt & {
       total_amount: number | null;
@@ -155,6 +186,7 @@ export default async function Receipts({
       suggested_amount: total_amount,
       order_id: orderInfo?.id ?? null,
       order_notes: orderInfo?.notes ?? null,
+      batch_receipt_no: batchReceiptNoById.get(rest.id) ?? null,
     };
   });
 
@@ -315,6 +347,8 @@ export default async function Receipts({
                         >
                           {receipt.id}
                         </Link>
+                      ) : col === "batch_receipt_no" ? (
+                        (receipt.batch_receipt_no ?? "-")
                       ) : (
                         String(receipt[col] ?? "")
                       )}
