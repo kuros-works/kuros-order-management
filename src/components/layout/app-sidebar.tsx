@@ -35,7 +35,7 @@ export function AppSidebar() {
   const pathname = usePathname();
 
   return (
-    <Sidebar>
+    <Sidebar className="print:hidden">
       <SidebarHeader>
         <p className="px-2 py-1 text-sm font-bold">受発注管理</p>
       </SidebarHeader>

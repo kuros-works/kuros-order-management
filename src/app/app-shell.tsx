@@ -19,7 +19,7 @@ export function AppShell({ children }: { children: React.ReactNode }) {
     <SidebarProvider>
       <AppSidebar />
       <SidebarInset>
-        <header className="flex h-12 shrink-0 items-center border-b border-zinc-300 px-2">
+        <header className="flex h-12 shrink-0 items-center border-b border-zinc-300 px-2 print:hidden">
           <SidebarTrigger />
         </header>
         {children}
