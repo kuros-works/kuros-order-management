@@ -230,6 +230,8 @@ export default async function Receipts({
             receipts 一覧（{receipts?.length ?? 0}件）
           </h1>
         }
+        extraHref="/receipts/create-batch"
+        extraLabel="領収書を作成"
       />
       <form
         action="/receipts"
