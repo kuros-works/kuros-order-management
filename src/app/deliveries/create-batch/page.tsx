@@ -11,7 +11,7 @@ function getSingleParam(
   return single?.trim() ?? "";
 }
 
-async function ConfirmedDeliveryPrintView({
+async function DeliveryPrintView({
   companyId,
   startDate,
   endDate,
@@ -22,7 +22,7 @@ async function ConfirmedDeliveryPrintView({
   startDate: string;
   endDate: string;
   batchDeliveryNo: string;
-  confirmedCount: string;
+  confirmedCount: string | null;
 }) {
   const supabase = await createClient();
 
@@ -141,9 +141,15 @@ async function ConfirmedDeliveryPrintView({
   return (
     <div className="p-8">
       <div className="mb-4 flex items-center justify-between print:hidden">
-        <p className="text-sm font-bold text-green-700">
-          {batchDeliveryNo}として{confirmedCount}件を確定しました
-        </p>
+        {confirmedCount ? (
+          <p className="text-sm font-bold text-green-700">
+            {batchDeliveryNo}として{confirmedCount}件を確定しました
+          </p>
+        ) : (
+          <p className="text-sm font-bold text-zinc-700">
+            {batchDeliveryNo} の印刷プレビュー
+          </p>
+        )}
         <a
           href={closeHref}
           className="rounded border border-zinc-300 bg-zinc-100 px-3 py-2 text-sm"
@@ -196,15 +202,28 @@ export default async function CreateBatchDeliveryPage({
   const actionError = getSingleParam(resolvedSearchParams, "action_error");
   const confirmedNo = getSingleParam(resolvedSearchParams, "confirmed_no");
   const confirmedCount = getSingleParam(resolvedSearchParams, "confirmed_count");
+  const viewBatchNo = getSingleParam(resolvedSearchParams, "view_batch_no");
 
   if (confirmedNo && confirmedCount) {
     return (
-      <ConfirmedDeliveryPrintView
+      <DeliveryPrintView
         companyId={companyId}
         startDate={startDate}
         endDate={endDate}
         batchDeliveryNo={confirmedNo}
         confirmedCount={confirmedCount}
+      />
+    );
+  }
+
+  if (viewBatchNo) {
+    return (
+      <DeliveryPrintView
+        companyId={companyId}
+        startDate={startDate}
+        endDate={endDate}
+        batchDeliveryNo={viewBatchNo}
+        confirmedCount={null}
       />
     );
   }
@@ -247,7 +266,6 @@ export default async function CreateBatchDeliveryPage({
         batch_delivery_no: string | null;
       }[]
     | null = null;
-  let confirmedExcludedCount = 0;
   let searchError: string | null = null;
 
   if (hasSearchCondition) {
@@ -307,7 +325,7 @@ export default async function CreateBatchDeliveryPage({
         }
 
         if (!searchError) {
-          const allItems = (rawItems ?? []).map((item) => ({
+          deliveryItems = (rawItems ?? []).map((item) => ({
             id: item.id,
             delivery_date: item.delivery_date,
             delivery_note_code:
@@ -322,10 +340,6 @@ export default async function CreateBatchDeliveryPage({
             total_amount: item.total_amount,
             batch_delivery_no: batchDeliveryNoById.get(item.id) ?? null,
           }));
-          deliveryItems = allItems.filter(
-            (item) => item.batch_delivery_no === null,
-          );
-          confirmedExcludedCount = allItems.length - deliveryItems.length;
         }
       }
     }
@@ -419,16 +433,6 @@ export default async function CreateBatchDeliveryPage({
 
       {hasSearchCondition &&
         !searchError &&
-        confirmedExcludedCount > 0 &&
-        deliveryItems &&
-        deliveryItems.length > 0 && (
-          <p className="mb-4 text-sm font-bold text-amber-700">
-            {confirmedExcludedCount}件は既に確定済みのため対象外です
-          </p>
-        )}
-
-      {hasSearchCondition &&
-        !searchError &&
         (deliveryItems && deliveryItems.length > 0 ? (
           <>
             <div className="max-h-[70vh] overflow-auto">
@@ -456,11 +460,17 @@ export default async function CreateBatchDeliveryPage({
                     <th className="sticky top-0 border border-zinc-300 bg-zinc-100 px-3 py-2 text-left">
                       金額
                     </th>
+                    <th className="sticky top-0 border border-zinc-300 bg-zinc-100 px-3 py-2 text-left">
+                      選択/確定状態
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
                   {deliveryItems.map((item) => (
-                    <tr key={item.id}>
+                    <tr
+                      key={item.id}
+                      className={item.batch_delivery_no ? "bg-zinc-100" : undefined}
+                    >
                       <td className="border border-zinc-300 px-3 py-2">
                         {item.delivery_date ?? "-"}
                       </td>
@@ -486,6 +496,35 @@ export default async function CreateBatchDeliveryPage({
                           ? item.total_amount.toLocaleString("ja-JP")
                           : "-"}
                       </td>
+                      <td className="border border-zinc-300 px-3 py-2">
+                        {item.batch_delivery_no ? (
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs text-zinc-600">
+                              {item.batch_delivery_no}
+                            </span>
+                            <a
+                              href={`/deliveries/create-batch?${new URLSearchParams(
+                                {
+                                  company_id: companyId,
+                                  start_date: startDate,
+                                  end_date: endDate,
+                                  view_batch_no: item.batch_delivery_no,
+                                },
+                              ).toString()}`}
+                              className="rounded border border-zinc-300 bg-white px-2 py-1 text-xs"
+                            >
+                              印刷
+                            </a>
+                          </div>
+                        ) : (
+                          <input
+                            type="checkbox"
+                            name="item_ids"
+                            value={item.id}
+                            form="create-batch-form"
+                          />
+                        )}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -495,7 +534,11 @@ export default async function CreateBatchDeliveryPage({
               合計数量: {totalQuantity.toLocaleString("ja-JP")} / 合計金額:{" "}
               {totalAmount.toLocaleString("ja-JP")}円
             </p>
-            <form action={createBatchDelivery} className="mt-4">
+            <form
+              id="create-batch-form"
+              action={createBatchDelivery}
+              className="mt-4"
+            >
               <input type="hidden" name="company_id" value={companyId} />
               <input type="hidden" name="start_date" value={startDate} />
               <input type="hidden" name="end_date" value={endDate} />
@@ -508,11 +551,7 @@ export default async function CreateBatchDeliveryPage({
             </form>
           </>
         ) : (
-          <p>
-            {confirmedExcludedCount > 0
-              ? `対象となる未確定データがありません（${confirmedExcludedCount}件は既に確定済みのため除外されました）`
-              : "該当するデータがありません"}
-          </p>
+          <p>該当するデータがありません</p>
         ))}
     </div>
   );

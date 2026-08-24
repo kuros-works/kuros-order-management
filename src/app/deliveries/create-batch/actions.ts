@@ -52,6 +52,17 @@ export async function createBatchDelivery(formData: FormData) {
     redirectWithParams(base, { action_error: "選択された会社が見つかりません" });
   }
 
+  const selectedIds = formData
+    .getAll("item_ids")
+    .map((value) => Number(value))
+    .filter((id) => Number.isFinite(id));
+
+  if (selectedIds.length === 0) {
+    redirectWithParams(base, {
+      action_error: "納品書を作成する行を選択してください",
+    });
+  }
+
   const { data: rawItems, error: itemsError } = await supabase
     .from("deliveries_with_order_info")
     .select("id")
@@ -65,11 +76,12 @@ export async function createBatchDelivery(formData: FormData) {
     });
   }
 
-  const targetIds = (rawItems ?? []).map((item) => item.id as number);
+  const scopedIds = new Set((rawItems ?? []).map((item) => item.id as number));
+  const targetIds = selectedIds.filter((id) => scopedIds.has(id));
 
   if (targetIds.length === 0) {
     redirectWithParams(base, {
-      action_error: "対象データが0件のため納品書を作成できません",
+      action_error: "選択した行が検索条件の対象範囲に見つかりませんでした",
     });
   }
 
@@ -91,7 +103,7 @@ export async function createBatchDelivery(formData: FormData) {
 
   if (unconfirmedIds.length === 0) {
     redirectWithParams(base, {
-      action_error: "対象となる未確定データがありません",
+      action_error: "選択した行はすべて確定済みです",
     });
   }
 
