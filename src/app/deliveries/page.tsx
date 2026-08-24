@@ -215,6 +215,8 @@ export default async function Deliveries({
           </h1>
         }
         newHref="/deliveries/new"
+        extraHref="/deliveries/create-batch"
+        extraLabel="納品書を作成"
       />
       <form
         action="/deliveries"
