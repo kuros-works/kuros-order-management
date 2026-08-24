@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase-server";
 import { createBatchDelivery } from "./actions";
+import { PrintDocument } from "@/components/print/PrintDocument";
 
 function getSingleParam(
   params: { [key: string]: string | string[] | undefined },
@@ -8,6 +9,179 @@ function getSingleParam(
   const value = params[key];
   const single = Array.isArray(value) ? value[0] : value;
   return single?.trim() ?? "";
+}
+
+async function ConfirmedDeliveryPrintView({
+  companyId,
+  startDate,
+  endDate,
+  batchDeliveryNo,
+  confirmedCount,
+}: {
+  companyId: string;
+  startDate: string;
+  endDate: string;
+  batchDeliveryNo: string;
+  confirmedCount: string;
+}) {
+  const supabase = await createClient();
+
+  const closeHref = `/deliveries/create-batch?${new URLSearchParams({
+    company_id: companyId,
+    start_date: startDate,
+    end_date: endDate,
+  }).toString()}`;
+
+  const [
+    { data: company, error: companyError },
+    { data: issuerRow, error: issuerError },
+    { data: items, error: itemsError },
+  ] = await Promise.all([
+    supabase
+      .from("companies")
+      .select("id, company_name, contact_name, address, postal_code")
+      .eq("id", Number(companyId))
+      .maybeSingle(),
+    supabase
+      .from("company_settings")
+      .select(
+        "company_name, contact_person, postal_code, address, phone, email, invoice_registration_number, bank_name, branch_name, account_type, account_number, account_holder",
+      )
+      .maybeSingle(),
+    supabase
+      .from("delivery_note_items")
+      .select("id, order_id, delivered_quantity, batch_delivery_created_at")
+      .eq("batch_delivery_no", batchDeliveryNo)
+      .order("id", { ascending: true }),
+  ]);
+
+  const loadError = companyError || issuerError || itemsError;
+  if (loadError || !company || !issuerRow) {
+    return (
+      <div className="p-8">
+        <h1 className="text-xl font-bold text-red-600">
+          印刷データの取得に失敗しました
+        </h1>
+        {loadError && (
+          <pre className="mt-4 whitespace-pre-wrap text-sm text-red-500">
+            {loadError.message}
+          </pre>
+        )}
+        <a href={closeHref} className="mt-4 inline-block text-sm underline">
+          一覧に戻る
+        </a>
+      </div>
+    );
+  }
+
+  const orderIds = Array.from(
+    new Set(
+      (items ?? [])
+        .map((item) => item.order_id)
+        .filter((id): id is number => id !== null && id !== undefined),
+    ),
+  );
+
+  const { data: orders, error: ordersError } = await supabase
+    .from("orders")
+    .select("id, subject, unit, unit_price")
+    .in("id", orderIds.length > 0 ? orderIds : [-1]);
+
+  if (ordersError) {
+    return (
+      <div className="p-8">
+        <h1 className="text-xl font-bold text-red-600">
+          受注データの取得に失敗しました
+        </h1>
+        <pre className="mt-4 whitespace-pre-wrap text-sm text-red-500">
+          {ordersError.message}
+        </pre>
+        <a href={closeHref} className="mt-4 inline-block text-sm underline">
+          一覧に戻る
+        </a>
+      </div>
+    );
+  }
+
+  const orderById = new Map((orders ?? []).map((order) => [order.id, order]));
+
+  const lineItems = (items ?? []).map((item) => {
+    const order =
+      item.order_id !== null && item.order_id !== undefined
+        ? orderById.get(item.order_id)
+        : undefined;
+    const unitPrice = order?.unit_price ?? 0;
+    const quantity = item.delivered_quantity ?? 0;
+    return {
+      description: order?.subject ?? "-",
+      quantity,
+      unit: order?.unit ?? "",
+      unitPrice,
+      amount: unitPrice * quantity,
+    };
+  });
+
+  const subtotal = lineItems.reduce((sum, item) => sum + item.amount, 0);
+  const tax = Math.round(subtotal * 0.1);
+  const total = subtotal + tax;
+
+  const subjects = new Set((orders ?? []).map((order) => order.subject));
+  const documentSubject = subjects.size === 1 ? [...subjects][0] : null;
+
+  const firstCreatedAt = (items ?? [])
+    .map((item) => item.batch_delivery_created_at)
+    .filter((value): value is string => !!value)
+    .sort()[0];
+  const documentDate = firstCreatedAt ? firstCreatedAt.slice(0, 10) : "";
+
+  const companyAddress = company.postal_code
+    ? `〒${company.postal_code} ${company.address ?? ""}`
+    : company.address;
+
+  return (
+    <div className="p-8">
+      <div className="mb-4 flex items-center justify-between print:hidden">
+        <p className="text-sm font-bold text-green-700">
+          {batchDeliveryNo}として{confirmedCount}件を確定しました
+        </p>
+        <a
+          href={closeHref}
+          className="rounded border border-zinc-300 bg-zinc-100 px-3 py-2 text-sm"
+        >
+          閉じる
+        </a>
+      </div>
+      <PrintDocument
+        documentType="delivery"
+        documentNumber={batchDeliveryNo}
+        documentDate={documentDate}
+        subject={documentSubject}
+        companyName={company.company_name}
+        contactName={company.contact_name}
+        companyAddress={companyAddress}
+        issuer={{
+          companyName: issuerRow.company_name,
+          contactPerson: issuerRow.contact_person,
+          postalCode: issuerRow.postal_code,
+          address: issuerRow.address,
+          phone: issuerRow.phone,
+          email: issuerRow.email,
+          invoiceRegistrationNumber: issuerRow.invoice_registration_number,
+          bankName: issuerRow.bank_name,
+          branchName: issuerRow.branch_name,
+          accountType: issuerRow.account_type,
+          accountNumber: issuerRow.account_number,
+          accountHolder: issuerRow.account_holder,
+        }}
+        lineItems={lineItems}
+        subtotal={subtotal}
+        tax={tax}
+        total={total}
+        showPaymentInfo={false}
+        notes={null}
+      />
+    </div>
+  );
 }
 
 export default async function CreateBatchDeliveryPage({
@@ -22,6 +196,18 @@ export default async function CreateBatchDeliveryPage({
   const actionError = getSingleParam(resolvedSearchParams, "action_error");
   const confirmedNo = getSingleParam(resolvedSearchParams, "confirmed_no");
   const confirmedCount = getSingleParam(resolvedSearchParams, "confirmed_count");
+
+  if (confirmedNo && confirmedCount) {
+    return (
+      <ConfirmedDeliveryPrintView
+        companyId={companyId}
+        startDate={startDate}
+        endDate={endDate}
+        batchDeliveryNo={confirmedNo}
+        confirmedCount={confirmedCount}
+      />
+    );
+  }
 
   const supabase = await createClient();
 
@@ -225,12 +411,6 @@ export default async function CreateBatchDeliveryPage({
 
       {actionError && (
         <p className="mb-4 text-sm font-bold text-red-600">{actionError}</p>
-      )}
-
-      {confirmedNo && confirmedCount && (
-        <p className="mb-4 text-sm font-bold text-green-700">
-          {confirmedNo}として{confirmedCount}件を確定しました
-        </p>
       )}
 
       {searchError && (
