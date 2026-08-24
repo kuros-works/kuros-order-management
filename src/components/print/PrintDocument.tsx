@@ -27,7 +27,6 @@ export type PrintDocumentProps = {
   documentType: PrintDocumentType;
   documentNumber: string;
   documentDate: string;
-  subject: string | null;
   companyName: string;
   contactName: string | null;
   companyAddress: string | null;
@@ -60,7 +59,6 @@ export function PrintDocument({
   documentType,
   documentNumber,
   documentDate,
-  subject,
   companyName,
   contactName,
   companyAddress,
@@ -72,8 +70,6 @@ export function PrintDocument({
   showPaymentInfo,
   notes,
 }: PrintDocumentProps) {
-  const showTaxBreakdown = issuer.invoiceRegistrationNumber !== null;
-
   return (
     <div className="mx-auto max-w-[210mm] bg-white p-10 text-sm text-zinc-900 print:max-w-none print:p-0">
       <style>{`
@@ -105,8 +101,6 @@ export function PrintDocument({
           )}
         </div>
       </div>
-
-      {subject && <p className="mb-4">件名: {subject}</p>}
 
       <div className="mb-8">
         <p className="font-bold">{issuer.companyName}</p>
@@ -151,18 +145,14 @@ export function PrintDocument({
       <div className="print-no-break mb-8 flex justify-end">
         <table className="w-64 border-collapse">
           <tbody>
-            {showTaxBreakdown && (
-              <>
-                <tr>
-                  <td className="py-1">10%対象(税抜)</td>
-                  <td className="py-1 text-right">{formatYen(subtotal)}</td>
-                </tr>
-                <tr>
-                  <td className="py-1">10%消費税</td>
-                  <td className="py-1 text-right">{formatYen(tax)}</td>
-                </tr>
-              </>
-            )}
+            <tr>
+              <td className="py-1">小計</td>
+              <td className="py-1 text-right">{formatYen(subtotal)}</td>
+            </tr>
+            <tr>
+              <td className="py-1">消費税</td>
+              <td className="py-1 text-right">{formatYen(tax)}</td>
+            </tr>
             <tr className="font-bold">
               <td className="border-t border-zinc-400 py-1">合計金額</td>
               <td className="border-t border-zinc-400 py-1 text-right">

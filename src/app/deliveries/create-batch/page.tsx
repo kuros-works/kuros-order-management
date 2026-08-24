@@ -125,9 +125,6 @@ async function DeliveryPrintView({
   const tax = Math.round(subtotal * 0.1);
   const total = subtotal + tax;
 
-  const subjects = new Set((orders ?? []).map((order) => order.subject));
-  const documentSubject = subjects.size === 1 ? [...subjects][0] : null;
-
   const firstCreatedAt = (items ?? [])
     .map((item) => item.batch_delivery_created_at)
     .filter((value): value is string => !!value)
@@ -161,7 +158,6 @@ async function DeliveryPrintView({
         documentType="delivery"
         documentNumber={batchDeliveryNo}
         documentDate={documentDate}
-        subject={documentSubject}
         companyName={company.company_name}
         contactName={company.contact_name}
         companyAddress={companyAddress}
