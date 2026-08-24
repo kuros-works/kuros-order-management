@@ -18,6 +18,7 @@ const COLUMN_LABELS: Record<string, string> = {
   unit_price: "単価",
   quantity: "数量",
   amount: "金額",
+  batch_invoice_no: "確定番号",
 };
 
 const OWN_TABLE_SORT_COLUMNS = ["id", "invoice_code", "issued_date"] as const;
@@ -52,6 +53,10 @@ export default async function Invoices({
   const subject = getSingleParam(resolvedSearchParams, "subject");
   const drawingNumber = getSingleParam(resolvedSearchParams, "drawing_number");
   const companyName = getSingleParam(resolvedSearchParams, "company_name");
+  const batchInvoiceNo = getSingleParam(
+    resolvedSearchParams,
+    "batch_invoice_no",
+  );
   const sortBy = getSingleParam(resolvedSearchParams, "sort_by");
   const sortOrder = getSingleParam(resolvedSearchParams, "sort_order");
 
@@ -68,6 +73,33 @@ export default async function Invoices({
 
   if (companyName) {
     invoiceQuery = invoiceQuery.ilike("company_name", `%${companyName}%`);
+  }
+
+  // invoices_with_order_info ビューは invoices.batch_invoice_no を持たないため、
+  // 一括NO検索は invoices から該当IDを求めてから絞り込む。
+  if (batchInvoiceNo) {
+    const { data: batchMatchRows, error: batchMatchError } = await supabase
+      .from("invoices")
+      .select("id")
+      .ilike("batch_invoice_no", `%${batchInvoiceNo}%`);
+
+    if (batchMatchError) {
+      return (
+        <div className="p-8">
+          <h1 className="text-xl font-bold text-red-600">
+            確定番号の検索に失敗しました
+          </h1>
+          <pre className="mt-4 whitespace-pre-wrap text-sm text-red-500">
+            {batchMatchError.message}
+          </pre>
+        </div>
+      );
+    }
+
+    const batchMatchIds = (batchMatchRows ?? []).map(
+      (row) => row.id as number,
+    );
+    invoiceQuery = invoiceQuery.in("id", batchMatchIds);
   }
 
   if (
@@ -95,6 +127,35 @@ export default async function Invoices({
     );
   }
 
+  // invoices_with_order_info ビューは invoices.batch_invoice_no を持たないため、
+  // 確定番号表示に必要な分だけ invoices から補完取得する。
+  const invoiceIds = (rawInvoices ?? []).map((invoice) => invoice.id as number);
+  const batchInvoiceNoById = new Map<number, string | null>();
+
+  if (invoiceIds.length > 0) {
+    const { data: batchRows, error: batchError } = await supabase
+      .from("invoices")
+      .select("id, batch_invoice_no")
+      .in("id", invoiceIds);
+
+    if (batchError) {
+      return (
+        <div className="p-8">
+          <h1 className="text-xl font-bold text-red-600">
+            確定番号の取得に失敗しました
+          </h1>
+          <pre className="mt-4 whitespace-pre-wrap text-sm text-red-500">
+            {batchError.message}
+          </pre>
+        </div>
+      );
+    }
+
+    for (const row of batchRows ?? []) {
+      batchInvoiceNoById.set(row.id, row.batch_invoice_no);
+    }
+  }
+
   const invoices = rawInvoices?.map((invoice) => {
     const { total_amount, ...rest } = invoice as typeof invoice & {
       total_amount: number | null;
@@ -102,6 +163,7 @@ export default async function Invoices({
     return {
       ...rest,
       amount: total_amount,
+      batch_invoice_no: batchInvoiceNoById.get(rest.id) ?? null,
     };
   });
 
@@ -127,6 +189,7 @@ export default async function Invoices({
     if (subject) params.set("subject", subject);
     if (drawingNumber) params.set("drawing_number", drawingNumber);
     if (companyName) params.set("company_name", companyName);
+    if (batchInvoiceNo) params.set("batch_invoice_no", batchInvoiceNo);
     const nextSortOrder =
       sortBy === col && currentSortOrder === "asc" ? "desc" : "asc";
     params.set("sort_by", col);
@@ -180,6 +243,17 @@ export default async function Invoices({
           name="company_name"
           defaultValue={companyName}
           placeholder="会社名で検索（部分一致）"
+          className="rounded border border-zinc-300 px-2 py-1 text-sm"
+        />
+        <label htmlFor="batch_invoice_no" className="text-sm">
+          一括NO
+        </label>
+        <input
+          type="text"
+          id="batch_invoice_no"
+          name="batch_invoice_no"
+          defaultValue={batchInvoiceNo}
+          placeholder="一括NOで検索（部分一致）"
           className="rounded border border-zinc-300 px-2 py-1 text-sm"
         />
         <button
@@ -257,6 +331,8 @@ export default async function Invoices({
                         >
                           {invoice.id}
                         </Link>
+                      ) : col === "batch_invoice_no" ? (
+                        (invoice.batch_invoice_no ?? "-")
                       ) : (
                         String(invoice[col] ?? "")
                       )}
