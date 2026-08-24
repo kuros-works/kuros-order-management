@@ -61,6 +61,7 @@ export default async function CreateBatchInvoicePage({
         batch_invoice_no: string | null;
       }[]
     | null = null;
+  let confirmedExcludedCount = 0;
   let searchError: string | null = null;
 
   if (hasSearchCondition) {
@@ -96,7 +97,7 @@ export default async function CreateBatchInvoicePage({
         }
 
         if (!searchError) {
-          invoiceItems = (rawItems ?? []).map((item) => ({
+          const allItems = (rawItems ?? []).map((item) => ({
             id: item.id,
             issued_date: item.issued_date,
             invoice_code: item.invoice_code,
@@ -107,6 +108,10 @@ export default async function CreateBatchInvoicePage({
             total_amount: item.total_amount,
             batch_invoice_no: batchInvoiceNoById.get(item.id) ?? null,
           }));
+          invoiceItems = allItems.filter(
+            (item) => item.batch_invoice_no === null,
+          );
+          confirmedExcludedCount = allItems.length - invoiceItems.length;
         }
       }
     }
@@ -201,6 +206,12 @@ export default async function CreateBatchInvoicePage({
         <p className="text-sm font-bold text-red-600">{searchError}</p>
       )}
 
+      {hasSearchCondition && !searchError && confirmedExcludedCount > 0 && (
+        <p className="mb-4 text-sm font-bold text-amber-700">
+          {confirmedExcludedCount}件は既に確定済みのため対象外です
+        </p>
+      )}
+
       {hasSearchCondition &&
         !searchError &&
         (invoiceItems && invoiceItems.length > 0 ? (
@@ -230,17 +241,11 @@ export default async function CreateBatchInvoicePage({
                     <th className="sticky top-0 border border-zinc-300 bg-zinc-100 px-3 py-2 text-left">
                       金額
                     </th>
-                    <th className="sticky top-0 border border-zinc-300 bg-zinc-100 px-3 py-2 text-left">
-                      確定番号
-                    </th>
                   </tr>
                 </thead>
                 <tbody>
                   {invoiceItems.map((item) => (
-                    <tr
-                      key={item.id}
-                      className={item.batch_invoice_no ? "bg-zinc-100" : undefined}
-                    >
+                    <tr key={item.id}>
                       <td className="border border-zinc-300 px-3 py-2">
                         {item.issued_date ?? "-"}
                       </td>
@@ -266,9 +271,6 @@ export default async function CreateBatchInvoicePage({
                           ? item.total_amount.toLocaleString("ja-JP")
                           : "-"}
                       </td>
-                      <td className="border border-zinc-300 px-3 py-2">
-                        {item.batch_invoice_no ?? "-"}
-                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -291,7 +293,11 @@ export default async function CreateBatchInvoicePage({
             </form>
           </>
         ) : (
-          <p>該当するデータがありません</p>
+          <p>
+            {confirmedExcludedCount > 0
+              ? "対象となる未確定データがありません"
+              : "該当するデータがありません"}
+          </p>
         ))}
     </div>
   );

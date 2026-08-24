@@ -85,14 +85,13 @@ export async function createBatchInvoice(formData: FormData) {
     });
   }
 
-  const hasConfirmedRow = (existingBatchRows ?? []).some(
-    (row) => row.batch_invoice_no !== null,
-  );
+  const unconfirmedIds = (existingBatchRows ?? [])
+    .filter((row) => row.batch_invoice_no === null)
+    .map((row) => row.id as number);
 
-  if (hasConfirmedRow) {
+  if (unconfirmedIds.length === 0) {
     redirectWithParams(base, {
-      action_error:
-        "選択した期間に確定済みのデータが含まれています。期間を調整するか、確定済み分を除いて再度お試しください",
+      action_error: "対象となる未確定データがありません",
     });
   }
 
@@ -122,7 +121,7 @@ export async function createBatchInvoice(formData: FormData) {
       batch_invoice_no: batchInvoiceNo,
       batch_invoice_created_at: new Date().toISOString(),
     })
-    .in("id", targetIds);
+    .in("id", unconfirmedIds);
 
   if (updateError) {
     redirectWithParams(base, {
@@ -133,6 +132,6 @@ export async function createBatchInvoice(formData: FormData) {
   revalidatePath("/invoices/create-batch");
   redirectWithParams(base, {
     confirmed_no: batchInvoiceNo,
-    confirmed_count: String(targetIds.length),
+    confirmed_count: String(unconfirmedIds.length),
   });
 }
