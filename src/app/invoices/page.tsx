@@ -206,6 +206,8 @@ export default async function Invoices({
           </h1>
         }
         newHref="/invoices/new"
+        extraHref="/invoices/create-batch"
+        extraLabel="一括請求書を作成"
       />
       <form
         action="/invoices"
