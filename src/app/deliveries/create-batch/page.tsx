@@ -61,6 +61,7 @@ export default async function CreateBatchDeliveryPage({
         batch_delivery_no: string | null;
       }[]
     | null = null;
+  let confirmedExcludedCount = 0;
   let searchError: string | null = null;
 
   if (hasSearchCondition) {
@@ -120,7 +121,7 @@ export default async function CreateBatchDeliveryPage({
         }
 
         if (!searchError) {
-          deliveryItems = (rawItems ?? []).map((item) => ({
+          const allItems = (rawItems ?? []).map((item) => ({
             id: item.id,
             delivery_date: item.delivery_date,
             delivery_note_code:
@@ -135,6 +136,10 @@ export default async function CreateBatchDeliveryPage({
             total_amount: item.total_amount,
             batch_delivery_no: batchDeliveryNoById.get(item.id) ?? null,
           }));
+          deliveryItems = allItems.filter(
+            (item) => item.batch_delivery_no === null,
+          );
+          confirmedExcludedCount = allItems.length - deliveryItems.length;
         }
       }
     }
@@ -232,6 +237,12 @@ export default async function CreateBatchDeliveryPage({
         <p className="text-sm font-bold text-red-600">{searchError}</p>
       )}
 
+      {hasSearchCondition && !searchError && confirmedExcludedCount > 0 && (
+        <p className="mb-4 text-sm font-bold text-amber-700">
+          {confirmedExcludedCount}件は既に確定済みのため対象外です
+        </p>
+      )}
+
       {hasSearchCondition &&
         !searchError &&
         (deliveryItems && deliveryItems.length > 0 ? (
@@ -261,17 +272,11 @@ export default async function CreateBatchDeliveryPage({
                     <th className="sticky top-0 border border-zinc-300 bg-zinc-100 px-3 py-2 text-left">
                       金額
                     </th>
-                    <th className="sticky top-0 border border-zinc-300 bg-zinc-100 px-3 py-2 text-left">
-                      確定番号
-                    </th>
                   </tr>
                 </thead>
                 <tbody>
                   {deliveryItems.map((item) => (
-                    <tr
-                      key={item.id}
-                      className={item.batch_delivery_no ? "bg-zinc-100" : undefined}
-                    >
+                    <tr key={item.id}>
                       <td className="border border-zinc-300 px-3 py-2">
                         {item.delivery_date ?? "-"}
                       </td>
@@ -297,9 +302,6 @@ export default async function CreateBatchDeliveryPage({
                           ? item.total_amount.toLocaleString("ja-JP")
                           : "-"}
                       </td>
-                      <td className="border border-zinc-300 px-3 py-2">
-                        {item.batch_delivery_no ?? "-"}
-                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -322,7 +324,11 @@ export default async function CreateBatchDeliveryPage({
             </form>
           </>
         ) : (
-          <p>該当するデータがありません</p>
+          <p>
+            {confirmedExcludedCount > 0
+              ? "対象となる未確定データがありません"
+              : "該当するデータがありません"}
+          </p>
         ))}
     </div>
   );
