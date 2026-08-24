@@ -161,11 +161,15 @@ export default async function CreateBatchReceiptPage({
         </p>
       )}
 
-      {hasSearchCondition && !searchError && confirmedExcludedCount > 0 && (
-        <p className="mb-4 text-sm font-bold text-amber-700">
-          {confirmedExcludedCount}件は既に確定済みのため対象外です
-        </p>
-      )}
+      {hasSearchCondition &&
+        !searchError &&
+        confirmedExcludedCount > 0 &&
+        receiptItems &&
+        receiptItems.length > 0 && (
+          <p className="mb-4 text-sm font-bold text-amber-700">
+            {confirmedExcludedCount}件は既に確定済みのため対象外です
+          </p>
+        )}
 
       {hasSearchCondition &&
         !searchError &&
@@ -278,7 +282,7 @@ export default async function CreateBatchReceiptPage({
         ) : (
           <p>
             {confirmedExcludedCount > 0
-              ? "対象となる未確定データがありません"
+              ? `対象となる未確定データがありません（${confirmedExcludedCount}件は既に確定済みのため除外されました）`
               : "該当するデータがありません"}
           </p>
         ))}
