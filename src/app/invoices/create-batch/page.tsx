@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase-server";
 import { createBatchInvoice } from "./actions";
+import { PrintDocument } from "@/components/print/PrintDocument";
 
 function getSingleParam(
   params: { [key: string]: string | string[] | undefined },
@@ -8,6 +9,181 @@ function getSingleParam(
   const value = params[key];
   const single = Array.isArray(value) ? value[0] : value;
   return single?.trim() ?? "";
+}
+
+async function InvoicePrintView({
+  companyId,
+  startDate,
+  endDate,
+  batchInvoiceNo,
+  confirmedCount,
+}: {
+  companyId: string;
+  startDate: string;
+  endDate: string;
+  batchInvoiceNo: string;
+  confirmedCount: string | null;
+}) {
+  const supabase = await createClient();
+
+  const closeHref = `/invoices/create-batch?${new URLSearchParams({
+    company_id: companyId,
+    start_date: startDate,
+    end_date: endDate,
+  }).toString()}`;
+
+  const [
+    { data: company, error: companyError },
+    { data: issuerRow, error: issuerError },
+    { data: items, error: itemsError },
+  ] = await Promise.all([
+    supabase
+      .from("companies")
+      .select("id, company_name, contact_name, address, postal_code")
+      .eq("id", Number(companyId))
+      .maybeSingle(),
+    supabase
+      .from("company_settings")
+      .select(
+        "company_name, contact_person, postal_code, address, phone, email, invoice_registration_number, bank_name, branch_name, account_type, account_number, account_holder",
+      )
+      .maybeSingle(),
+    supabase
+      .from("invoices")
+      .select("id, order_id, batch_invoice_created_at")
+      .eq("batch_invoice_no", batchInvoiceNo)
+      .order("id", { ascending: true }),
+  ]);
+
+  const loadError = companyError || issuerError || itemsError;
+  if (loadError || !company || !issuerRow) {
+    return (
+      <div className="p-8">
+        <h1 className="text-xl font-bold text-red-600">
+          印刷データの取得に失敗しました
+        </h1>
+        {loadError && (
+          <pre className="mt-4 whitespace-pre-wrap text-sm text-red-500">
+            {loadError.message}
+          </pre>
+        )}
+        <a href={closeHref} className="mt-4 inline-block text-sm underline">
+          一覧に戻る
+        </a>
+      </div>
+    );
+  }
+
+  const orderIds = Array.from(
+    new Set(
+      (items ?? [])
+        .map((item) => item.order_id)
+        .filter((id): id is number => id !== null && id !== undefined),
+    ),
+  );
+
+  const { data: orders, error: ordersError } = await supabase
+    .from("orders")
+    .select("id, subject, unit, unit_price, quantity")
+    .in("id", orderIds.length > 0 ? orderIds : [-1]);
+
+  if (ordersError) {
+    return (
+      <div className="p-8">
+        <h1 className="text-xl font-bold text-red-600">
+          受注データの取得に失敗しました
+        </h1>
+        <pre className="mt-4 whitespace-pre-wrap text-sm text-red-500">
+          {ordersError.message}
+        </pre>
+        <a href={closeHref} className="mt-4 inline-block text-sm underline">
+          一覧に戻る
+        </a>
+      </div>
+    );
+  }
+
+  const orderById = new Map((orders ?? []).map((order) => [order.id, order]));
+
+  const lineItems = (items ?? []).map((item) => {
+    const order =
+      item.order_id !== null && item.order_id !== undefined
+        ? orderById.get(item.order_id)
+        : undefined;
+    const unitPrice = order?.unit_price ?? 0;
+    const quantity = order?.quantity ?? 0;
+    return {
+      description: order?.subject ?? "-",
+      quantity,
+      unit: order?.unit ?? "",
+      unitPrice,
+      amount: unitPrice * quantity,
+    };
+  });
+
+  const subtotal = lineItems.reduce((sum, item) => sum + item.amount, 0);
+  const tax = Math.round(subtotal * 0.1);
+  const total = subtotal + tax;
+
+  const firstCreatedAt = (items ?? [])
+    .map((item) => item.batch_invoice_created_at)
+    .filter((value): value is string => !!value)
+    .sort()[0];
+  const documentDate = firstCreatedAt ? firstCreatedAt.slice(0, 10) : "";
+
+  const companyAddress = company.postal_code
+    ? `〒${company.postal_code} ${company.address ?? ""}`
+    : company.address;
+
+  return (
+    <div className="p-8">
+      <div className="mb-4 flex items-center justify-between print:hidden">
+        {confirmedCount ? (
+          <p className="text-sm font-bold text-green-700">
+            {batchInvoiceNo}として{confirmedCount}件を確定しました
+          </p>
+        ) : (
+          <p className="text-sm font-bold text-zinc-700">
+            {batchInvoiceNo} の印刷プレビュー
+          </p>
+        )}
+        <a
+          href={closeHref}
+          className="rounded border border-zinc-300 bg-zinc-100 px-3 py-2 text-sm"
+        >
+          閉じる
+        </a>
+      </div>
+      <PrintDocument
+        documentType="invoice"
+        documentNumber={batchInvoiceNo}
+        documentDate={documentDate}
+        companyName={company.company_name}
+        contactName={company.contact_name}
+        companyAddress={companyAddress}
+        issuer={{
+          companyName: issuerRow.company_name,
+          contactPerson: issuerRow.contact_person,
+          postalCode: issuerRow.postal_code,
+          address: issuerRow.address,
+          phone: issuerRow.phone,
+          email: issuerRow.email,
+          invoiceRegistrationNumber: issuerRow.invoice_registration_number,
+          bankName: issuerRow.bank_name,
+          branchName: issuerRow.branch_name,
+          accountType: issuerRow.account_type,
+          accountNumber: issuerRow.account_number,
+          accountHolder: issuerRow.account_holder,
+        }}
+        lineItems={lineItems}
+        subtotal={subtotal}
+        tax={tax}
+        total={total}
+        showPaymentInfo={true}
+        notes={null}
+      />
+    </div>
+  );
 }
 
 export default async function CreateBatchInvoicePage({
@@ -22,6 +198,31 @@ export default async function CreateBatchInvoicePage({
   const actionError = getSingleParam(resolvedSearchParams, "action_error");
   const confirmedNo = getSingleParam(resolvedSearchParams, "confirmed_no");
   const confirmedCount = getSingleParam(resolvedSearchParams, "confirmed_count");
+  const viewBatchNo = getSingleParam(resolvedSearchParams, "view_batch_no");
+
+  if (confirmedNo && confirmedCount) {
+    return (
+      <InvoicePrintView
+        companyId={companyId}
+        startDate={startDate}
+        endDate={endDate}
+        batchInvoiceNo={confirmedNo}
+        confirmedCount={confirmedCount}
+      />
+    );
+  }
+
+  if (viewBatchNo) {
+    return (
+      <InvoicePrintView
+        companyId={companyId}
+        startDate={startDate}
+        endDate={endDate}
+        batchInvoiceNo={viewBatchNo}
+        confirmedCount={null}
+      />
+    );
+  }
 
   const supabase = await createClient();
 
@@ -61,7 +262,6 @@ export default async function CreateBatchInvoicePage({
         batch_invoice_no: string | null;
       }[]
     | null = null;
-  let confirmedExcludedCount = 0;
   let searchError: string | null = null;
 
   if (hasSearchCondition) {
@@ -97,7 +297,7 @@ export default async function CreateBatchInvoicePage({
         }
 
         if (!searchError) {
-          const allItems = (rawItems ?? []).map((item) => ({
+          invoiceItems = (rawItems ?? []).map((item) => ({
             id: item.id,
             issued_date: item.issued_date,
             invoice_code: item.invoice_code,
@@ -108,10 +308,6 @@ export default async function CreateBatchInvoicePage({
             total_amount: item.total_amount,
             batch_invoice_no: batchInvoiceNoById.get(item.id) ?? null,
           }));
-          invoiceItems = allItems.filter(
-            (item) => item.batch_invoice_no === null,
-          );
-          confirmedExcludedCount = allItems.length - invoiceItems.length;
         }
       }
     }
@@ -196,25 +392,9 @@ export default async function CreateBatchInvoicePage({
         <p className="mb-4 text-sm font-bold text-red-600">{actionError}</p>
       )}
 
-      {confirmedNo && confirmedCount && (
-        <p className="mb-4 text-sm font-bold text-green-700">
-          {confirmedNo}として{confirmedCount}件を確定しました
-        </p>
-      )}
-
       {searchError && (
         <p className="text-sm font-bold text-red-600">{searchError}</p>
       )}
-
-      {hasSearchCondition &&
-        !searchError &&
-        confirmedExcludedCount > 0 &&
-        invoiceItems &&
-        invoiceItems.length > 0 && (
-          <p className="mb-4 text-sm font-bold text-amber-700">
-            {confirmedExcludedCount}件は既に確定済みのため対象外です
-          </p>
-        )}
 
       {hasSearchCondition &&
         !searchError &&
@@ -245,11 +425,17 @@ export default async function CreateBatchInvoicePage({
                     <th className="sticky top-0 border border-zinc-300 bg-zinc-100 px-3 py-2 text-left">
                       金額
                     </th>
+                    <th className="sticky top-0 border border-zinc-300 bg-zinc-100 px-3 py-2 text-left">
+                      選択/確定状態
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
                   {invoiceItems.map((item) => (
-                    <tr key={item.id}>
+                    <tr
+                      key={item.id}
+                      className={item.batch_invoice_no ? "bg-zinc-100" : undefined}
+                    >
                       <td className="border border-zinc-300 px-3 py-2">
                         {item.issued_date ?? "-"}
                       </td>
@@ -275,6 +461,35 @@ export default async function CreateBatchInvoicePage({
                           ? item.total_amount.toLocaleString("ja-JP")
                           : "-"}
                       </td>
+                      <td className="border border-zinc-300 px-3 py-2">
+                        {item.batch_invoice_no ? (
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs text-zinc-600">
+                              {item.batch_invoice_no}
+                            </span>
+                            <a
+                              href={`/invoices/create-batch?${new URLSearchParams(
+                                {
+                                  company_id: companyId,
+                                  start_date: startDate,
+                                  end_date: endDate,
+                                  view_batch_no: item.batch_invoice_no,
+                                },
+                              ).toString()}`}
+                              className="rounded border border-zinc-300 bg-white px-2 py-1 text-xs"
+                            >
+                              印刷
+                            </a>
+                          </div>
+                        ) : (
+                          <input
+                            type="checkbox"
+                            name="item_ids"
+                            value={item.id}
+                            form="create-batch-form"
+                          />
+                        )}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -284,7 +499,11 @@ export default async function CreateBatchInvoicePage({
               合計数量: {totalQuantity.toLocaleString("ja-JP")} / 合計金額:{" "}
               {totalAmount.toLocaleString("ja-JP")}円
             </p>
-            <form action={createBatchInvoice} className="mt-4">
+            <form
+              id="create-batch-form"
+              action={createBatchInvoice}
+              className="mt-4"
+            >
               <input type="hidden" name="company_id" value={companyId} />
               <input type="hidden" name="start_date" value={startDate} />
               <input type="hidden" name="end_date" value={endDate} />
@@ -297,11 +516,7 @@ export default async function CreateBatchInvoicePage({
             </form>
           </>
         ) : (
-          <p>
-            {confirmedExcludedCount > 0
-              ? `対象となる未確定データがありません（${confirmedExcludedCount}件は既に確定済みのため除外されました）`
-              : "該当するデータがありません"}
-          </p>
+          <p>該当するデータがありません</p>
         ))}
     </div>
   );
