@@ -1,5 +1,6 @@
 import { createClient } from "@/lib/supabase-server";
 import { createBatchReceipt } from "./actions";
+import { PrintDocument } from "@/components/print/PrintDocument";
 
 function getSingleParam(
   params: { [key: string]: string | string[] | undefined },
@@ -8,6 +9,193 @@ function getSingleParam(
   const value = params[key];
   const single = Array.isArray(value) ? value[0] : value;
   return single?.trim() ?? "";
+}
+
+async function ReceiptPrintView({
+  batchInvoiceNo,
+  batchReceiptNo,
+  confirmedCount,
+}: {
+  batchInvoiceNo: string;
+  batchReceiptNo: string;
+  confirmedCount: string | null;
+}) {
+  const supabase = await createClient();
+
+  const closeHref = `/receipts/create-batch?${new URLSearchParams({
+    batch_invoice_no: batchInvoiceNo,
+  }).toString()}`;
+
+  const [
+    { data: issuerRow, error: issuerError },
+    { data: receiptRows, error: receiptsError },
+  ] = await Promise.all([
+    supabase
+      .from("company_settings")
+      .select(
+        "company_name, contact_person, postal_code, address, phone, email, invoice_registration_number, bank_name, branch_name, account_type, account_number, account_holder",
+      )
+      .maybeSingle(),
+    supabase
+      .from("receipts")
+      .select(
+        "id, received_amount, batch_receipt_created_at, invoices(order_id, orders(subject, unit, unit_price, quantity, company_id, companies(id, company_name, contact_name, address, postal_code)))",
+      )
+      .eq("batch_receipt_no", batchReceiptNo)
+      .order("id", { ascending: true }),
+  ]);
+
+  const loadError = issuerError || receiptsError;
+  if (loadError || !issuerRow) {
+    return (
+      <div className="p-8">
+        <h1 className="text-xl font-bold text-red-600">
+          印刷データの取得に失敗しました
+        </h1>
+        {loadError && (
+          <pre className="mt-4 whitespace-pre-wrap text-sm text-red-500">
+            {loadError.message}
+          </pre>
+        )}
+        <a href={closeHref} className="mt-4 inline-block text-sm underline">
+          一覧に戻る
+        </a>
+      </div>
+    );
+  }
+
+  type CompanyRef = {
+    id: number;
+    company_name: string;
+    contact_name: string | null;
+    address: string | null;
+    postal_code: string | null;
+  };
+  type OrderRef = {
+    subject: string | null;
+    unit: string | null;
+    unit_price: number | null;
+    quantity: number | null;
+    company_id: number | null;
+    companies: CompanyRef[] | CompanyRef | null;
+  };
+  type InvoiceRef = {
+    order_id: number | null;
+    orders: OrderRef[] | OrderRef | null;
+  };
+  type ReceiptRow = {
+    id: number;
+    received_amount: number | null;
+    batch_receipt_created_at: string | null;
+    invoices: InvoiceRef[] | InvoiceRef | null;
+  };
+
+  const rows = (receiptRows ?? []) as unknown as ReceiptRow[];
+
+  function resolveOrder(row: ReceiptRow): OrderRef | null {
+    const invoiceInfo = Array.isArray(row.invoices)
+      ? row.invoices[0]
+      : row.invoices;
+    if (!invoiceInfo) return null;
+    return Array.isArray(invoiceInfo.orders)
+      ? (invoiceInfo.orders[0] ?? null)
+      : invoiceInfo.orders;
+  }
+
+  const lineItems = rows.map((row) => {
+    const order = resolveOrder(row);
+    return {
+      description: order?.subject ?? "-",
+      quantity: order?.quantity ?? 0,
+      unit: order?.unit ?? "",
+      unitPrice: order?.unit_price ?? 0,
+      amount: row.received_amount ?? 0,
+    };
+  });
+
+  const firstOrder = rows.length > 0 ? resolveOrder(rows[0]) : null;
+  const companyRef = firstOrder
+    ? Array.isArray(firstOrder.companies)
+      ? (firstOrder.companies[0] ?? null)
+      : firstOrder.companies
+    : null;
+
+  if (!companyRef) {
+    return (
+      <div className="p-8">
+        <h1 className="text-xl font-bold text-red-600">
+          会社情報の取得に失敗しました
+        </h1>
+        <a href={closeHref} className="mt-4 inline-block text-sm underline">
+          一覧に戻る
+        </a>
+      </div>
+    );
+  }
+
+  const subtotal = lineItems.reduce((sum, item) => sum + item.amount, 0);
+  const tax = Math.round(subtotal * 0.1);
+  const total = subtotal + tax;
+
+  const firstCreatedAt = rows
+    .map((row) => row.batch_receipt_created_at)
+    .filter((value): value is string => !!value)
+    .sort()[0];
+  const documentDate = firstCreatedAt ? firstCreatedAt.slice(0, 10) : "";
+
+  const companyAddress = companyRef.postal_code
+    ? `〒${companyRef.postal_code} ${companyRef.address ?? ""}`
+    : companyRef.address;
+
+  return (
+    <div className="p-8">
+      <div className="mb-4 flex items-center justify-between print:hidden">
+        {confirmedCount ? (
+          <p className="text-sm font-bold text-green-700">
+            {batchReceiptNo}として{confirmedCount}件を確定しました
+          </p>
+        ) : (
+          <p className="text-sm font-bold text-zinc-700">
+            {batchReceiptNo} の印刷プレビュー
+          </p>
+        )}
+        <a
+          href={closeHref}
+          className="rounded border border-zinc-300 bg-zinc-100 px-3 py-2 text-sm"
+        >
+          閉じる
+        </a>
+      </div>
+      <PrintDocument
+        documentType="receipt"
+        documentNumber={batchReceiptNo}
+        documentDate={documentDate}
+        companyName={companyRef.company_name}
+        contactName={companyRef.contact_name}
+        companyAddress={companyAddress}
+        issuer={{
+          companyName: issuerRow.company_name,
+          contactPerson: issuerRow.contact_person,
+          postalCode: issuerRow.postal_code,
+          address: issuerRow.address,
+          phone: issuerRow.phone,
+          email: issuerRow.email,
+          invoiceRegistrationNumber: issuerRow.invoice_registration_number,
+          bankName: issuerRow.bank_name,
+          branchName: issuerRow.branch_name,
+          accountType: issuerRow.account_type,
+          accountNumber: issuerRow.account_number,
+          accountHolder: issuerRow.account_holder,
+        }}
+        lineItems={lineItems}
+        subtotal={subtotal}
+        tax={tax}
+        total={total}
+        showPaymentInfo={false}
+        notes={null}
+      />
+    </div>
+  );
 }
 
 export default async function CreateBatchReceiptPage({
@@ -20,6 +208,27 @@ export default async function CreateBatchReceiptPage({
   const actionError = getSingleParam(resolvedSearchParams, "action_error");
   const confirmedNo = getSingleParam(resolvedSearchParams, "confirmed_no");
   const confirmedCount = getSingleParam(resolvedSearchParams, "confirmed_count");
+  const viewBatchNo = getSingleParam(resolvedSearchParams, "view_batch_no");
+
+  if (confirmedNo && confirmedCount) {
+    return (
+      <ReceiptPrintView
+        batchInvoiceNo={batchInvoiceNo}
+        batchReceiptNo={confirmedNo}
+        confirmedCount={confirmedCount}
+      />
+    );
+  }
+
+  if (viewBatchNo) {
+    return (
+      <ReceiptPrintView
+        batchInvoiceNo={batchInvoiceNo}
+        batchReceiptNo={viewBatchNo}
+        confirmedCount={null}
+      />
+    );
+  }
 
   const supabase = await createClient();
 
@@ -43,7 +252,6 @@ export default async function CreateBatchReceiptPage({
       }[]
     | null = null;
   let unpaidCount = 0;
-  let confirmedExcludedCount = 0;
   let searchError: string | null = null;
 
   if (hasSearchCondition) {
@@ -79,7 +287,7 @@ export default async function CreateBatchReceiptPage({
       }
 
       if (!searchError) {
-        const paidItems = eligibleItems.map((item) => ({
+        receiptItems = eligibleItems.map((item) => ({
           id: item.id,
           receipt_code: item.receipt_code,
           created_date: item.created_date,
@@ -94,10 +302,6 @@ export default async function CreateBatchReceiptPage({
           received_amount: item.received_amount,
           batch_receipt_no: batchReceiptNoById.get(item.id) ?? null,
         }));
-        receiptItems = paidItems.filter(
-          (item) => item.batch_receipt_no === null,
-        );
-        confirmedExcludedCount = paidItems.length - receiptItems.length;
       }
     }
   }
@@ -121,7 +325,7 @@ export default async function CreateBatchReceiptPage({
             htmlFor="batch_invoice_no"
             className="mb-1 block text-sm font-bold"
           >
-            一括請求書コード
+            一括請求NO
           </label>
           <input
             id="batch_invoice_no"
@@ -145,12 +349,6 @@ export default async function CreateBatchReceiptPage({
         <p className="mb-4 text-sm font-bold text-red-600">{actionError}</p>
       )}
 
-      {confirmedNo && confirmedCount && (
-        <p className="mb-4 text-sm font-bold text-green-700">
-          {confirmedNo}として{confirmedCount}件を確定しました
-        </p>
-      )}
-
       {searchError && (
         <p className="text-sm font-bold text-red-600">{searchError}</p>
       )}
@@ -160,16 +358,6 @@ export default async function CreateBatchReceiptPage({
           {unpaidCount}件が未入金のため対象外です
         </p>
       )}
-
-      {hasSearchCondition &&
-        !searchError &&
-        confirmedExcludedCount > 0 &&
-        receiptItems &&
-        receiptItems.length > 0 && (
-          <p className="mb-4 text-sm font-bold text-amber-700">
-            {confirmedExcludedCount}件は既に確定済みのため対象外です
-          </p>
-        )}
 
       {hasSearchCondition &&
         !searchError &&
@@ -212,11 +400,17 @@ export default async function CreateBatchReceiptPage({
                     <th className="sticky top-0 border border-zinc-300 bg-zinc-100 px-3 py-2 text-left">
                       入金額
                     </th>
+                    <th className="sticky top-0 border border-zinc-300 bg-zinc-100 px-3 py-2 text-left">
+                      選択/確定状態
+                    </th>
                   </tr>
                 </thead>
                 <tbody>
                   {receiptItems.map((item) => (
-                    <tr key={item.id}>
+                    <tr
+                      key={item.id}
+                      className={item.batch_receipt_no ? "bg-zinc-100" : undefined}
+                    >
                       <td className="border border-zinc-300 px-3 py-2">
                         {item.receipt_code}
                       </td>
@@ -256,6 +450,33 @@ export default async function CreateBatchReceiptPage({
                           ? item.received_amount.toLocaleString("ja-JP")
                           : "-"}
                       </td>
+                      <td className="border border-zinc-300 px-3 py-2">
+                        {item.batch_receipt_no ? (
+                          <div className="flex items-center gap-2">
+                            <span className="text-xs text-zinc-600">
+                              {item.batch_receipt_no}
+                            </span>
+                            <a
+                              href={`/receipts/create-batch?${new URLSearchParams(
+                                {
+                                  batch_invoice_no: batchInvoiceNo,
+                                  view_batch_no: item.batch_receipt_no,
+                                },
+                              ).toString()}`}
+                              className="rounded border border-zinc-300 bg-white px-2 py-1 text-xs"
+                            >
+                              印刷
+                            </a>
+                          </div>
+                        ) : (
+                          <input
+                            type="checkbox"
+                            name="item_ids"
+                            value={item.id}
+                            form="create-batch-form"
+                          />
+                        )}
+                      </td>
                     </tr>
                   ))}
                 </tbody>
@@ -265,7 +486,11 @@ export default async function CreateBatchReceiptPage({
               合計数量: {totalQuantity.toLocaleString("ja-JP")} / 合計金額:{" "}
               {totalAmount.toLocaleString("ja-JP")}円
             </p>
-            <form action={createBatchReceipt} className="mt-4">
+            <form
+              id="create-batch-form"
+              action={createBatchReceipt}
+              className="mt-4"
+            >
               <input
                 type="hidden"
                 name="batch_invoice_no"
@@ -281,8 +506,8 @@ export default async function CreateBatchReceiptPage({
           </>
         ) : (
           <p>
-            {confirmedExcludedCount > 0
-              ? `対象となる未確定データがありません（${confirmedExcludedCount}件は既に確定済みのため除外されました）`
+            {unpaidCount > 0
+              ? "入金済みの行がありません"
               : "該当するデータがありません"}
           </p>
         ))}

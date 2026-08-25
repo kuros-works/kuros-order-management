@@ -27,13 +27,23 @@ export async function createBatchReceipt(formData: FormData) {
     });
   }
 
+  const selectedIds = formData
+    .getAll("item_ids")
+    .map((value) => Number(value))
+    .filter((id) => Number.isFinite(id));
+
+  if (selectedIds.length === 0) {
+    redirectWithParams(base, {
+      action_error: "一括領収書を作成する行を選択してください",
+    });
+  }
+
   const supabase = await createClient();
 
   const { data: rawItems, error: itemsError } = await supabase
     .from("receipts_with_order_info")
-    .select("id")
-    .eq("batch_invoice_no", batchInvoiceNo)
-    .not("received_date", "is", null);
+    .select("id, received_date")
+    .eq("batch_invoice_no", batchInvoiceNo);
 
   if (itemsError) {
     redirectWithParams(base, {
@@ -41,11 +51,17 @@ export async function createBatchReceipt(formData: FormData) {
     });
   }
 
-  const targetIds = (rawItems ?? []).map((item) => item.id as number);
+  const paidScopedIds = new Set(
+    (rawItems ?? [])
+      .filter((item) => item.received_date !== null)
+      .map((item) => item.id as number),
+  );
+
+  const targetIds = selectedIds.filter((id) => paidScopedIds.has(id));
 
   if (targetIds.length === 0) {
     redirectWithParams(base, {
-      action_error: "対象データが0件のため一括領収書を作成できません",
+      action_error: "入金済みの行がありません",
     });
   }
 
@@ -67,7 +83,7 @@ export async function createBatchReceipt(formData: FormData) {
 
   if (unconfirmedIds.length === 0) {
     redirectWithParams(base, {
-      action_error: "対象となる未確定データがありません",
+      action_error: "選択した行はすべて確定済みです",
     });
   }
 
