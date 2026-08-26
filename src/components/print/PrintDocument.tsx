@@ -70,13 +70,6 @@ export function PrintDocument({
   showPaymentInfo,
   notes,
 }: PrintDocumentProps) {
-  const receiptCauseText =
-    documentType === "receipt"
-      ? Array.from(
-          new Set(lineItems.map((item) => item.description).filter(Boolean)),
-        ).join("、")
-      : "";
-
   return (
     <div className="mx-auto max-w-[210mm] bg-white p-10 text-sm text-zinc-900 print:max-w-none print:p-0">
       <style>{`
@@ -172,12 +165,6 @@ export function PrintDocument({
 
       {documentType === "receipt" && (
         <div className="print-no-break mb-8">
-          <div className="mb-6 flex items-end justify-between">
-            <p>但し　{receiptCauseText || "商品代金"}として</p>
-            <div className="flex h-20 w-20 flex-shrink-0 items-center justify-center border border-zinc-400 text-xs text-zinc-500">
-              収入印紙
-            </div>
-          </div>
           <p className="text-center text-base font-bold">
             上記正に領収いたしました
           </p>
