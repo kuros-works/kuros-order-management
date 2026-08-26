@@ -10,12 +10,14 @@ export function ListPageHeader({
   newLabel = "新規作成",
   extraHref,
   extraLabel,
+  extraLinks,
 }: {
   heading: ReactNode;
   newHref?: string;
   newLabel?: string;
   extraHref?: string;
   extraLabel?: string;
+  extraLinks?: { href: string; label: string }[];
 }) {
   return (
     <div className="mb-4 flex items-center justify-between gap-4">
@@ -26,6 +28,15 @@ export function ListPageHeader({
             {extraLabel}
           </Link>
         )}
+        {extraLinks?.map((link) => (
+          <Link
+            key={link.href}
+            href={link.href}
+            className={cn(buttonVariants(), "gap-1.5")}
+          >
+            {link.label}
+          </Link>
+        ))}
         {newHref && (
           <Link href={newHref} className={cn(buttonVariants(), "gap-1.5")}>
             <Plus className="size-4" />

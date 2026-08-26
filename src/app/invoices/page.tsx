@@ -208,6 +208,7 @@ export default async function Invoices({
         newHref="/invoices/new"
         extraHref="/invoices/create-batch"
         extraLabel="一括請求書を作成"
+        extraLinks={[{ href: "/invoices/unpaid", label: "入金残" }]}
       />
       <form
         action="/invoices"
