@@ -124,6 +124,8 @@ export default async function WorkOrders({
           </h1>
         }
         newHref="/work-orders/new"
+        extraHref="/work-orders/print"
+        extraLabel="一括印刷"
       />
       <form
         action="/work-orders"
