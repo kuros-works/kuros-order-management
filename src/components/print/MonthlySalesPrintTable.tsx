@@ -18,10 +18,10 @@ export function MonthlySalesPrintTable({
   totalAmount,
 }: MonthlySalesPrintTableProps) {
   return (
-    <div className="mx-auto max-w-[420mm] bg-white p-10 text-xs text-zinc-900 print:max-w-none print:p-0">
+    <div className="mx-auto max-w-[297mm] bg-white p-10 text-xs text-zinc-900 print:max-w-none print:p-0">
       <style>{`
         @media print {
-          @page { size: A3 landscape; margin: 10mm; }
+          @page { size: A4 landscape; margin: 10mm; }
           .print-no-break { break-inside: avoid; }
         }
       `}</style>
