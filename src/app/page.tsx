@@ -258,6 +258,8 @@ export default async function Home({
         heading={
           <h1 className="text-xl font-bold">受注一覧（{orders.length}件）</h1>
         }
+        extraHref="/orders/backlog"
+        extraLabel="受注残"
         newHref="/orders/new"
       />
       <form action="/" method="GET" className="mb-4 flex items-center gap-2">
