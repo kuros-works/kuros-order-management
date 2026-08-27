@@ -202,7 +202,7 @@ export default async function Invoices({
       <ListPageHeader
         heading={
           <h1 className="text-xl font-bold">
-            invoices 一覧（{invoices?.length ?? 0}件）
+            請求書一覧（{invoices?.length ?? 0}件）
           </h1>
         }
         newHref="/invoices/new"
