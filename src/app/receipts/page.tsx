@@ -227,7 +227,7 @@ export default async function Receipts({
       <ListPageHeader
         heading={
           <h1 className="text-xl font-bold">
-            receipts 一覧（{receipts?.length ?? 0}件）
+            領収書一覧（{receipts?.length ?? 0}件）
           </h1>
         }
         extraHref="/receipts/create-batch"
