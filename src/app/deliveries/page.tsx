@@ -211,7 +211,7 @@ export default async function Deliveries({
       <ListPageHeader
         heading={
           <h1 className="text-xl font-bold">
-            delivery_note_items 一覧（{deliveryNoteItems?.length ?? 0}件）
+            納品明細一覧（{deliveryNoteItems?.length ?? 0}件）
           </h1>
         }
         newHref="/deliveries/new"
